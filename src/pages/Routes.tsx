@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Pencil, Trash2, Route as RouteIcon, Calendar, Users, X, Check, Search, Store, ChevronDown, ChevronRight } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, routeDtoToLegacy, customerRouteDtoToLegacy, partyDtoToLegacy } from '@/lib/api';
 import { dayName, DAYS_OF_WEEK } from '@/lib/utils';
 import type { Route, Customer, CustomerRoute } from '@/lib/types';
 import Modal from '@/components/Modal';
@@ -21,13 +21,13 @@ export default function Routes() {
   const load = useCallback(async () => {
     setLoading(true);
     const [r, c, cr] = await Promise.all([
-      supabase.from('routes').select('*').order('sort_order'),
-      supabase.from('customers').select('*').order('name'),
-      supabase.from('customer_routes').select('*'),
+      api.routes.list().catch(() => []),
+      api.customers.list().catch(() => []),
+      api.customerRoutes.list().catch(() => []),
     ]);
-    setRoutes((r.data ?? []) as Route[]);
-    setCustomers((c.data ?? []) as Customer[]);
-    setCustomerRoutes((cr.data ?? []) as CustomerRoute[]);
+    setRoutes(r.map(routeDtoToLegacy));
+    setCustomers(c.map(partyDtoToLegacy));
+    setCustomerRoutes(cr.map(customerRouteDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -52,10 +52,14 @@ export default function Routes() {
       day_of_week: parseInt(form.day_of_week),
       sort_order: parseInt(form.sort_order),
     };
+    const input = {
+      name: payload.name, description: payload.description,
+      dayOfWeek: payload.day_of_week, sortOrder: payload.sort_order,
+    };
     if (editing) {
-      await supabase.from('routes').update(payload).eq('id', editing.id);
+      await api.routes.update(editing.id, input);
     } else {
-      await supabase.from('routes').insert(payload);
+      await api.routes.create(input);
     }
     setModalOpen(false);
     load();
@@ -63,16 +67,16 @@ export default function Routes() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this route? Shop assignments will also be removed.')) return;
-    await supabase.from('routes').delete().eq('id', id);
+    await api.routes.delete(id);
     load();
   };
 
   const toggleCustomer = async (routeId: string, customerId: string) => {
     const existing = customerRoutes.find((cr) => cr.route_id === routeId && cr.customer_id === customerId);
     if (existing) {
-      await supabase.from('customer_routes').delete().eq('id', existing.id);
+      await api.customerRoutes.unassign(existing.id);
     } else {
-      await supabase.from('customer_routes').insert({ route_id: routeId, customer_id: customerId });
+      await api.customerRoutes.assign(routeId, customerId);
     }
     load();
   };

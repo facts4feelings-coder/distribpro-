@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Users, Calendar, Banknote } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, employeeDtoToLegacy, salaryPaymentDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { Employee, SalaryPaymentWithEmployee } from '@/lib/types';
@@ -23,11 +23,11 @@ export default function Salaries() {
   const load = useCallback(async () => {
     setLoading(true);
     const [e, p] = await Promise.all([
-      supabase.from('employees').select('*').order('name'),
-      supabase.from('salary_payments').select('*, employees(*)').order('created_at', { ascending: false }),
+      api.employees.list().catch(() => []),
+      api.salaryPayments.list().catch(() => []),
     ]);
-    setEmployees((e.data ?? []) as Employee[]);
-    setPayments((p.data ?? []) as SalaryPaymentWithEmployee[]);
+    setEmployees(e.map(employeeDtoToLegacy));
+    setPayments(p.map(salaryPaymentDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -60,10 +60,14 @@ export default function Salaries() {
       position: empForm.position || null, salary: parseFloat(empForm.salary) || 0,
       hire_date: empForm.hire_date,
     };
+    const input = {
+      name: payload.name, phone: payload.phone, address: payload.address,
+      position: payload.position, salary: payload.salary, hireDate: payload.hire_date,
+    };
     if (editingEmp) {
-      await supabase.from('employees').update(payload).eq('id', editingEmp.id);
+      await api.employees.update(editingEmp.id, input);
     } else {
-      await supabase.from('employees').insert(payload);
+      await api.employees.create(input);
     }
     setEmpModal(false);
     load();
@@ -71,7 +75,7 @@ export default function Salaries() {
 
   const removeEmp = async (id: string) => {
     if (!confirm('Delete this employee?')) return;
-    await supabase.from('employees').delete().eq('id', id);
+    await api.employees.delete(id);
     load();
   };
 
@@ -91,14 +95,18 @@ export default function Salaries() {
       amount: parseFloat(payForm.amount) || 0, month: payForm.month,
       payment_method: payForm.payment_method, notes: payForm.notes || null,
     };
-    await supabase.from('salary_payments').insert(payload);
+    await api.salaryPayments.create({
+      employeeId: payload.employee_id, paymentDate: payload.payment_date,
+      amount: payload.amount, month: payload.month,
+      paymentMethod: payload.payment_method, notes: payload.notes,
+    });
     setPayModal(false);
     load();
   };
 
   const removePay = async (id: string) => {
     if (!confirm('Delete this salary payment?')) return;
-    await supabase.from('salary_payments').delete().eq('id', id);
+    await api.salaryPayments.delete(id);
     load();
   };
 

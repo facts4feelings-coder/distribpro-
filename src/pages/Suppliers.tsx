@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, BookOpen, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { api, supplierDtoToLegacy, partyInputFromLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, escapeHtml } from '@/lib/utils';
 import { printHtml } from '@/lib/reportPrint';
@@ -20,8 +21,8 @@ export default function Suppliers() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('suppliers').select('*').order('name');
-    setSuppliers((data ?? []) as Supplier[]);
+    const data = await api.suppliers.list().catch(() => []);
+    setSuppliers(data.map(supplierDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -60,10 +61,11 @@ export default function Suppliers() {
       opening_balance: parseFloat(form.opening_balance) || 0,
       current_balance: parseFloat(form.opening_balance) || 0,
     };
+    const input = partyInputFromLegacy(payload);
     if (editing) {
-      await supabase.from('suppliers').update(payload).eq('id', editing.id);
+      await api.suppliers.update(editing.id, input);
     } else {
-      await supabase.from('suppliers').insert(payload);
+      await api.suppliers.create(input);
     }
     setModalOpen(false);
     load();
@@ -71,7 +73,8 @@ export default function Suppliers() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this supplier? This cannot be undone.')) return;
-    await supabase.from('suppliers').delete().eq('id', id);
+    const { error } = await api.suppliers.delete(id);
+    if (error) { alert(error); return; }
     load();
   };
 
@@ -177,6 +180,8 @@ function SupplierLedgerModal({ supplier, onClose, sym }: { supplier: Supplier; o
 
   useEffect(() => {
     (async () => {
+      // TODO(Phase 4): ledger reads supplier invoices — migrates with the
+      // transaction services; still on the local shim until then.
       const { data: invoices } = await supabase.from('supplier_invoices').select('*').eq('supplier_id', supplier.id).order('invoice_date');
 
       type RawEntry = { date: string; description: string; debit: number; credit: number };

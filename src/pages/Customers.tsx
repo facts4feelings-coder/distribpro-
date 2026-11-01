@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Plus, Search, Pencil, Trash2, BookOpen, Phone, MapPin, Printer, Download, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, partyInputFromLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, escapeHtml } from '@/lib/utils';
 import { exportToCSV, parseCSV } from '@/lib/csv';
@@ -23,8 +24,8 @@ export default function Customers() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('customers').select('*').order('name');
-    setCustomers((data ?? []) as Customer[]);
+    const data = await api.customers.list().catch(() => []);
+    setCustomers(data.map(partyDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -63,10 +64,11 @@ export default function Customers() {
       opening_balance: parseFloat(form.opening_balance) || 0,
       current_balance: parseFloat(form.opening_balance) || 0,
     };
+    const input = partyInputFromLegacy(payload);
     if (editing) {
-      await supabase.from('customers').update(payload).eq('id', editing.id);
+      await api.customers.update(editing.id, input);
     } else {
-      await supabase.from('customers').insert(payload);
+      await api.customers.create(input);
     }
     setModalOpen(false);
     load();
@@ -74,7 +76,8 @@ export default function Customers() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this customer? This cannot be undone.')) return;
-    await supabase.from('customers').delete().eq('id', id);
+    const { error } = await api.customers.delete(id);
+    if (error) { alert(error); return; }
     load();
   };
 
@@ -116,9 +119,9 @@ export default function Customers() {
     }));
 
     if (payload.length > 0) {
-      const { error } = await supabase.from('customers').insert(payload);
+      const { error } = await api.customers.bulkCreate(payload.map(partyInputFromLegacy));
       if (error) {
-        alert('Import failed: ' + error.message);
+        alert('Import failed: ' + error);
       } else {
         alert(`Imported ${payload.length} customers successfully.`);
       }
@@ -243,6 +246,8 @@ function LedgerModal({ customer, onClose, sym }: { customer: Customer; onClose: 
 
   useEffect(() => {
     (async () => {
+      // TODO(Phase 4): ledger reads invoices/vouchers — migrates with the
+      // transaction services; still on the local shim until then.
       const [invoices, payments] = await Promise.all([
         supabase.from('customer_invoices').select('*').eq('customer_id', customer.id).order('invoice_date'),
         supabase.from('payment_vouchers').select('*').eq('customer_id', customer.id).order('voucher_date'),

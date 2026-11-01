@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { UserPlus, PackagePlus, X } from 'lucide-react';
+// TODO(Phase 4): QuickAdd is used inside the invoice/sale screens, which are
+// still on the local shim — it migrates together with its host pages so a
+// quick-added customer/product lands in the same database the host reads.
 import { supabase } from '@/lib/supabase';
 import type { Customer, Product } from '@/lib/types';
 

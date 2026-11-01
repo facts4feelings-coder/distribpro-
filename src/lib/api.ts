@@ -6,7 +6,10 @@
 // backup (6).
 // DTOs speak UI units (DECISIONS D8): taxRate is a plain percent number,
 // money is rupees — integer paisa never crosses this boundary.
-import type { Settings } from './types';
+import type {
+  Settings, Customer, Supplier, Product, Route, CustomerRoute,
+  Employee, SalaryPaymentWithEmployee, IncomeOption,
+} from './types';
 
 export interface SettingsDto {
   id: string;
@@ -92,6 +95,126 @@ export interface LicenseDto {
   updatedAt: string;
 }
 
+// ---------------------------------------------------------------- Phase 3
+// Master-data DTOs (mirror electron/services/masterService.ts) + adapters so
+// the pages keep their legacy snake_case row types untouched.
+export interface PartyDto {
+  id: string; name: string; phone: string | null; address: string | null; city: string | null;
+  openingBalance: number; currentBalance: number; balanceType: string; createdAt: string | null;
+}
+export interface PartyInput {
+  name: string; phone: string | null; address: string | null; city: string | null;
+  openingBalance: number; currentBalance: number;
+}
+export function partyDtoToLegacy(d: PartyDto): Customer {
+  return {
+    id: d.id, name: d.name, phone: d.phone, address: d.address, city: d.city,
+    opening_balance: d.openingBalance, current_balance: d.currentBalance,
+    balance_type: d.balanceType, created_at: d.createdAt ?? '',
+  };
+}
+export const supplierDtoToLegacy = (d: PartyDto): Supplier => partyDtoToLegacy(d) as Supplier;
+export function partyInputFromLegacy(p: {
+  name: string; phone: string | null; address: string | null; city: string | null;
+  opening_balance: number; current_balance: number;
+}): PartyInput {
+  return {
+    name: p.name, phone: p.phone, address: p.address, city: p.city,
+    openingBalance: p.opening_balance, currentBalance: p.current_balance,
+  };
+}
+
+export interface ProductDto {
+  id: string; name: string; sku: string | null; category: string | null; unit: string;
+  purchasePrice: number; salePrice: number; stockQuantity: number; reorderLevel: number;
+  createdAt: string | null;
+}
+export interface ProductInput {
+  name: string; sku: string | null; category: string | null; unit: string;
+  purchasePrice: number; salePrice: number; stockQuantity: number; reorderLevel: number;
+}
+export function productDtoToLegacy(d: ProductDto): Product {
+  return {
+    id: d.id, name: d.name, sku: d.sku, category: d.category, unit: d.unit,
+    purchase_price: d.purchasePrice, sale_price: d.salePrice,
+    stock_quantity: d.stockQuantity, reorder_level: d.reorderLevel, created_at: d.createdAt ?? '',
+  };
+}
+export function productInputFromLegacy(p: {
+  name: string; sku: string | null; category: string | null; unit: string;
+  purchase_price: number; sale_price: number; stock_quantity: number; reorder_level: number;
+}): ProductInput {
+  return {
+    name: p.name, sku: p.sku, category: p.category, unit: p.unit,
+    purchasePrice: p.purchase_price, salePrice: p.sale_price,
+    stockQuantity: p.stock_quantity, reorderLevel: p.reorder_level,
+  };
+}
+
+export interface RouteDto {
+  id: string; name: string; description: string | null; dayOfWeek: number; sortOrder: number;
+  createdAt: string | null;
+}
+export interface RouteInput {
+  name: string; description: string | null; dayOfWeek: number; sortOrder: number;
+}
+export function routeDtoToLegacy(d: RouteDto): Route {
+  return {
+    id: d.id, name: d.name, description: d.description,
+    day_of_week: d.dayOfWeek, sort_order: d.sortOrder, created_at: d.createdAt ?? '',
+  };
+}
+export interface CustomerRouteDto {
+  id: string; customerId: string; routeId: string; createdAt: string | null;
+}
+export function customerRouteDtoToLegacy(d: CustomerRouteDto): CustomerRoute {
+  return { id: d.id, customer_id: d.customerId, route_id: d.routeId, created_at: d.createdAt ?? '' };
+}
+
+export interface EmployeeDto {
+  id: string; name: string; phone: string | null; address: string | null; position: string | null;
+  salary: number; hireDate: string | null; isActive: boolean; createdAt: string | null;
+}
+export interface EmployeeInput {
+  name: string; phone: string | null; address: string | null; position: string | null;
+  salary: number; hireDate: string;
+}
+export function employeeDtoToLegacy(d: EmployeeDto): Employee {
+  return {
+    id: d.id, name: d.name, phone: d.phone, address: d.address, position: d.position,
+    salary: d.salary, hire_date: d.hireDate ?? '', is_active: d.isActive, created_at: d.createdAt ?? '',
+  };
+}
+export interface SalaryPaymentDto {
+  id: string; employeeId: string; paymentDate: string; amount: number; month: string;
+  paymentMethod: string; notes: string | null; createdAt: string | null; employee: EmployeeDto | null;
+}
+export interface SalaryPaymentInput {
+  employeeId: string; paymentDate: string; amount: number; month: string;
+  paymentMethod: string; notes: string | null;
+}
+export function salaryPaymentDtoToLegacy(d: SalaryPaymentDto): SalaryPaymentWithEmployee {
+  return {
+    id: d.id, employee_id: d.employeeId, payment_date: d.paymentDate, amount: d.amount,
+    month: d.month, payment_method: d.paymentMethod, notes: d.notes, created_at: d.createdAt ?? '',
+    employees: d.employee ? employeeDtoToLegacy(d.employee) : undefined,
+  };
+}
+
+export interface IncomeDto {
+  id: string; description: string; amount: number; incomeDate: string; category: string;
+  reference: string | null; createdAt: string | null;
+}
+export interface IncomeInput {
+  description: string; amount: number; incomeDate: string; category: string; reference: string | null;
+}
+export function incomeDtoToLegacy(d: IncomeDto): IncomeOption {
+  return {
+    id: d.id, description: d.description, amount: d.amount, income_date: d.incomeDate,
+    category: d.category, reference: d.reference, created_at: d.createdAt ?? '',
+  };
+}
+
 export interface UpdateUserOpts {
   userId: string;
   username: string;
@@ -133,6 +256,45 @@ interface DistribProApi {
     setActive(id: string, isActive: boolean): Promise<{ error?: string }>;
     delete(id: string): Promise<{ error?: string }>;
   };
+  customers: CrudApi<PartyDto, PartyInput>;
+  suppliers: CrudApi<PartyDto, PartyInput>;
+  products: CrudApi<ProductDto, ProductInput>;
+  routes: {
+    list(): Promise<RouteDto[]>;
+    create(input: RouteInput): Promise<{ error?: string }>;
+    update(id: string, input: RouteInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
+  customerRoutes: {
+    list(): Promise<CustomerRouteDto[]>;
+    assign(routeId: string, customerId: string): Promise<{ error?: string }>;
+    unassign(id: string): Promise<{ error?: string }>;
+  };
+  employees: {
+    list(): Promise<EmployeeDto[]>;
+    create(input: EmployeeInput): Promise<{ error?: string }>;
+    update(id: string, input: EmployeeInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
+  salaryPayments: {
+    list(): Promise<SalaryPaymentDto[]>;
+    create(input: SalaryPaymentInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
+  income: {
+    list(): Promise<IncomeDto[]>;
+    create(input: IncomeInput): Promise<{ error?: string }>;
+    update(id: string, input: IncomeInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
+}
+
+interface CrudApi<Dto, Input> {
+  list(): Promise<Dto[]>;
+  create(input: Input): Promise<{ error?: string }>;
+  bulkCreate(inputs: Input[]): Promise<{ error?: string; count: number }>;
+  update(id: string, input: Input): Promise<{ error?: string }>;
+  delete(id: string): Promise<{ error?: string }>;
 }
 
 declare global {
@@ -163,5 +325,29 @@ export const api: DistribProApi = {
   },
   get licenses() {
     return bridge().licenses;
+  },
+  get customers() {
+    return bridge().customers;
+  },
+  get suppliers() {
+    return bridge().suppliers;
+  },
+  get products() {
+    return bridge().products;
+  },
+  get routes() {
+    return bridge().routes;
+  },
+  get customerRoutes() {
+    return bridge().customerRoutes;
+  },
+  get employees() {
+    return bridge().employees;
+  },
+  get salaryPayments() {
+    return bridge().salaryPayments;
+  },
+  get income() {
+    return bridge().income;
   },
 };

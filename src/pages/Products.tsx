@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Plus, Search, Pencil, Trash2, Package, AlertTriangle, Download, Upload } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, productDtoToLegacy, productInputFromLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency } from '@/lib/utils';
 import { exportToCSV, parseCSV } from '@/lib/csv';
@@ -21,8 +21,8 @@ export default function Products() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('products').select('*').order('name');
-    setProducts((data ?? []) as Product[]);
+    const data = await api.products.list().catch(() => []);
+    setProducts(data.map(productDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -66,10 +66,11 @@ export default function Products() {
       stock_quantity: parseFloat(form.stock_quantity) || 0,
       reorder_level: parseFloat(form.reorder_level) || 0,
     };
+    const input = productInputFromLegacy(payload);
     if (editing) {
-      await supabase.from('products').update(payload).eq('id', editing.id);
+      await api.products.update(editing.id, input);
     } else {
-      await supabase.from('products').insert(payload);
+      await api.products.create(input);
     }
     setModalOpen(false);
     load();
@@ -77,7 +78,8 @@ export default function Products() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this product? This cannot be undone.')) return;
-    await supabase.from('products').delete().eq('id', id);
+    const { error } = await api.products.delete(id);
+    if (error) { alert(error); return; }
     load();
   };
 
@@ -124,9 +126,9 @@ export default function Products() {
     }));
 
     if (payload.length > 0) {
-      const { error } = await supabase.from('products').insert(payload);
+      const { error } = await api.products.bulkCreate(payload.map(productInputFromLegacy));
       if (error) {
-        alert('Import failed: ' + error.message);
+        alert('Import failed: ' + error);
       } else {
         alert(`Imported ${payload.length} products successfully.`);
       }

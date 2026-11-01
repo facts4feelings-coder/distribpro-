@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Calendar } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, incomeDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { IncomeOption } from '@/lib/types';
@@ -20,8 +20,8 @@ export default function IncomeOptions() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('income_options').select('*').order('income_date', { ascending: false });
-    setIncomes((data ?? []) as IncomeOption[]);
+    const data = await api.income.list().catch(() => []);
+    setIncomes(data.map(incomeDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -52,10 +52,14 @@ export default function IncomeOptions() {
       category: form.category,
       reference: form.reference || null,
     };
+    const input = {
+      description: payload.description, amount: payload.amount,
+      incomeDate: payload.income_date, category: payload.category, reference: payload.reference,
+    };
     if (editing) {
-      await supabase.from('income_options').update(payload).eq('id', editing.id);
+      await api.income.update(editing.id, input);
     } else {
-      await supabase.from('income_options').insert(payload);
+      await api.income.create(input);
     }
     setModalOpen(false);
     load();
@@ -63,7 +67,7 @@ export default function IncomeOptions() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this income entry?')) return;
-    await supabase.from('income_options').delete().eq('id', id);
+    await api.income.delete(id);
     load();
   };
 
