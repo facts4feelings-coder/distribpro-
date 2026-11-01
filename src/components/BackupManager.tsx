@@ -3,11 +3,11 @@ import {
   Database, Download, Upload, History, Trash2, AlertTriangle, CheckCircle2,
   Loader2, FileJson, RotateCcw,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import {
   createBackup, downloadBackup, logBackup, parseBackupFile, restoreBackup, tableName,
 } from '@/lib/backup';
 import type { BackupFile } from '@/lib/backup';
+import { api, type BackupHistoryDto } from '@/lib/api';
 
 interface HistoryRow {
   id: string;
@@ -28,12 +28,11 @@ export default function BackupManager() {
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
   const loadHistory = useCallback(async () => {
-    const { data } = await supabase
-      .from('backup_history')
-      .select('id, created_at, kind, file_name, size_bytes, table_counts')
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setHistory((data ?? []) as HistoryRow[]);
+    const data = await api.backup.history().catch(() => [] as BackupHistoryDto[]);
+    setHistory(data.map((h) => ({
+      id: h.id, created_at: h.createdAt, kind: h.kind, file_name: h.fileName,
+      size_bytes: h.sizeBytes, table_counts: h.tableCounts,
+    })));
   }, []);
 
   useEffect(() => { loadHistory(); }, [loadHistory]);
@@ -103,7 +102,7 @@ export default function BackupManager() {
   };
 
   const removeEntry = async (id: string) => {
-    await supabase.from('backup_history').delete().eq('id', id);
+    await api.backup.deleteHistory(id);
     loadHistory();
   };
 

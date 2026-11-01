@@ -26,6 +26,10 @@ import {
   type SalesmanTargetInput,
 } from '../services/reportsService';
 import {
+  exportBackup, importBackup, logBackup, listBackupHistory, deleteBackupHistory,
+  type BackupFileShape,
+} from '../services/backupService';
+import {
   listCustomers, createCustomer, bulkCreateCustomers, updateCustomer, deleteCustomer, getCustomer,
   getProduct,
   listSuppliers, createSupplier, bulkCreateSuppliers, updateSupplier, deleteSupplier,
@@ -137,7 +141,12 @@ export function registerHandlers(ipc: IpcMainLike, getDb: () => Db): void {
   ipc.handle('targets:create', async (_e, input: SalesmanTargetInput) => createSalesmanTarget(getDb(), input));
   ipc.handle('targets:update', async (_e, id: string, input: SalesmanTargetInput) => updateSalesmanTarget(getDb(), id, input));
   ipc.handle('targets:delete', async (_e, id: string) => deleteSalesmanTarget(getDb(), id));
-  // Phase 6: backup:* …
+  // Backup (Phase 6)
+  ipc.handle('backup:export', async () => exportBackup(getDb()));
+  ipc.handle('backup:import', async (_e, backup: BackupFileShape) => importBackup(getDb(), backup));
+  ipc.handle('backup:log', async (_e, kind: 'download' | 'restore', fileName: string | null, sizeBytes: number, tables: Record<string, number>) => logBackup(getDb(), kind, fileName, sizeBytes, tables));
+  ipc.handle('backup:history', async () => listBackupHistory(getDb()));
+  ipc.handle('backup:deleteHistory', async (_e, id: string) => deleteBackupHistory(getDb(), id));
 }
 
 export type { LicenseDto };

@@ -1,14 +1,11 @@
-import { supabase } from '@/lib/supabase';
+// Backup helpers (renderer side). Since Phase 6 the data work happens in the
+// Electron main process (backupService) via window.api; this module keeps the
+// file-format types, the download/parse helpers, and thin wrappers with the
+// same signatures BackupManager has always used.
+import { api, type BackupFileShape, type BackupImportResult } from './api';
 
-export interface BackupFile {
-  meta: {
-    app: string;
-    version: number;
-    created_at: string;
-    tables: Record<string, number>;
-  };
-  data: Record<string, Record<string, unknown>[]>;
-}
+export type BackupFile = BackupFileShape;
+export type RestoreResult = BackupImportResult;
 
 export const BACKUP_TABLES = [
   'settings',
@@ -57,20 +54,7 @@ export function tableName(key: string): string {
 }
 
 export async function createBackup(): Promise<BackupFile> {
-  const data: Record<string, Record<string, unknown>[]> = {};
-  const tables: Record<string, number> = {};
-
-  for (const table of BACKUP_TABLES) {
-    const { data: rows, error } = await supabase.from(table).select('*');
-    if (error) throw new Error(`Failed to read "${table}": ${error.message}`);
-    data[table] = rows ?? [];
-    tables[table] = rows?.length ?? 0;
-  }
-
-  return {
-    meta: { app: 'DistribPro', version: 1, created_at: new Date().toISOString(), tables },
-    data,
-  };
+  return api.backup.export();
 }
 
 export function downloadBackup(backup: BackupFile): string {
@@ -91,12 +75,7 @@ export function downloadBackup(backup: BackupFile): string {
 
 export async function logBackup(kind: 'download' | 'restore', fileName: string | null, backup: BackupFile): Promise<void> {
   const size = new Blob([JSON.stringify(backup)]).size;
-  await supabase.from('backup_history').insert({
-    kind,
-    file_name: fileName,
-    size_bytes: size,
-    table_counts: backup.meta.tables,
-  });
+  await api.backup.log(kind, fileName, size, backup.meta.tables);
 }
 
 export function parseBackupFile(text: string): BackupFile {
@@ -107,29 +86,13 @@ export function parseBackupFile(text: string): BackupFile {
   return parsed;
 }
 
-export interface RestoreResult {
-  restored: { table: string; rows: number }[];
-  errors: { table: string; message: string }[];
-}
-
 export async function restoreBackup(
   backup: BackupFile,
   onProgress: (label: string) => void
 ): Promise<RestoreResult> {
-  const restored: { table: string; rows: number }[] = [];
-  const errors: { table: string; message: string }[] = [];
-
-  for (const table of BACKUP_TABLES) {
-    const rows = backup.data[table];
-    if (!Array.isArray(rows) || rows.length === 0) continue;
-    onProgress(table);
-    const { error } = await supabase.from(table).upsert(rows);
-    if (error) {
-      errors.push({ table, message: error.message });
-    } else {
-      restored.push({ table, rows: rows.length });
-    }
-  }
-
-  return { restored, errors };
+  // The main process restores table-by-table in FK order inside per-table
+  // transactions; progress is reported once per section as it completes.
+  const result = await api.backup.import(backup);
+  for (const r of result.restored) onProgress(r.table);
+  return result;
 }

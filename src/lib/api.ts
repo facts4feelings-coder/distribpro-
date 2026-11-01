@@ -404,6 +404,29 @@ export function salesmanTargetDtoToLegacy(d: SalesmanTargetDto): {
   };
 }
 
+// ---------------------------------------------------------------- Phase 6
+export interface BackupFileShape {
+  meta: {
+    app: string;
+    version: number;
+    created_at: string;
+    tables: Record<string, number>;
+  };
+  data: Record<string, Record<string, unknown>[]>;
+}
+export interface BackupImportResult {
+  restored: { table: string; rows: number }[];
+  errors: { table: string; message: string }[];
+}
+export interface BackupHistoryDto {
+  id: string;
+  createdAt: string;
+  kind: string;
+  fileName: string | null;
+  sizeBytes: number | null;
+  tableCounts: Record<string, number>;
+}
+
 export interface UpdateUserOpts {
   userId: string;
   username: string;
@@ -520,6 +543,13 @@ interface DistribProApi {
     update(id: string, input: SalesmanTargetInput): Promise<{ error?: string }>;
     delete(id: string): Promise<{ error?: string }>;
   };
+  backup: {
+    export(): Promise<BackupFileShape>;
+    import(backup: BackupFileShape): Promise<BackupImportResult>;
+    log(kind: 'download' | 'restore', fileName: string | null, sizeBytes: number, tables: Record<string, number>): Promise<void>;
+    history(): Promise<BackupHistoryDto[]>;
+    deleteHistory(id: string): Promise<void>;
+  };
 }
 
 interface CrudApi<Dto, Input> {
@@ -601,5 +631,8 @@ export const api: DistribProApi = {
   },
   get targets() {
     return bridge().targets;
+  },
+  get backup() {
+    return bridge().backup;
   },
 };

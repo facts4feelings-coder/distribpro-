@@ -120,6 +120,13 @@ contextBridge.exposeInMainWorld('api', {
     update: (id: string, input: unknown) => ipcRenderer.invoke('targets:update', id, input),
     delete: (id: string) => ipcRenderer.invoke('targets:delete', id),
   },
+  backup: {
+    export: () => ipcRenderer.invoke('backup:export'),
+    import: (backup: unknown) => ipcRenderer.invoke('backup:import', backup),
+    log: (kind: string, fileName: string | null, sizeBytes: number, tables: unknown) => ipcRenderer.invoke('backup:log', kind, fileName, sizeBytes, tables),
+    history: () => ipcRenderer.invoke('backup:history'),
+    deleteHistory: (id: string) => ipcRenderer.invoke('backup:deleteHistory', id),
+  },
   licenses: {
     list: () => ipcRenderer.invoke('licenses:list'),
     create: (input: unknown) => ipcRenderer.invoke('licenses:create', input),
