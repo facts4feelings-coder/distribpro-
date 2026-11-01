@@ -103,7 +103,7 @@ data = {
          "payment_type": "credit", "notes": None, "created_at": D},
         {"id": CI3, "invoice_no": "SR-0001", "customer_id": C1, "invoice_date": "2026-10-07",
          "due_date": None, "subtotal": 1000, "discount": 0, "tax": 0, "total": 1000,
-         "paid_amount": 1000, "balance": 0, "status": "paid", "invoice_type": "sales_return",
+         "paid_amount": 1000, "balance": 0, "status": "paid", "invoice_type": "sales-return",
          "payment_type": "cash", "notes": None, "created_at": D},
     ],
     "customer_invoice_items": [
@@ -123,7 +123,7 @@ data = {
          "notes": None, "created_at": D},
         {"id": SI2, "invoice_no": "PR-0001", "supplier_id": S1, "invoice_date": "2026-10-08",
          "due_date": None, "subtotal": 1250, "discount": 0, "tax": 0, "total": 1250,
-         "paid_amount": 1250, "balance": 0, "status": "paid", "invoice_type": "purchase_return",
+         "paid_amount": 1250, "balance": 0, "status": "paid", "invoice_type": "purchase-return",
          "notes": None, "created_at": D},
     ],
     "supplier_invoice_items": [
@@ -194,7 +194,7 @@ for inv_tbl, item_tbl in (("customer_invoices", "customer_invoice_items"),
 
 opening = {P1: 100, P2: 50, P3: 20, P4: 5}
 stock = dict(opening)
-SIGN = {"sale": -1, "sales_return": +1, "purchase": +1, "purchase_return": -1}
+SIGN = {"sale": -1, "sales-return": +1, "purchase": +1, "purchase-return": -1}
 for inv_tbl, item_tbl in (("customer_invoices", "customer_invoice_items"),
                           ("supplier_invoices", "supplier_invoice_items")):
     types = {i["id"]: i["invoice_type"] for i in data[inv_tbl]}
@@ -210,11 +210,11 @@ expected = {
     "note": "All money in rupees (old backup format). New DB stores integer paisa = rupees x 100; quantities x1000 in new DB.",
     "table_counts": {t: len(rows) for t, rows in data.items()},
     "sales_total": total("customer_invoices", invoice_type="sale"),
-    "sales_returns_total": total("customer_invoices", invoice_type="sales_return"),
-    "net_sales": total("customer_invoices", invoice_type="sale") - total("customer_invoices", invoice_type="sales_return"),
+    "sales_returns_total": total("customer_invoices", invoice_type="sales-return"),
+    "net_sales": total("customer_invoices", invoice_type="sale") - total("customer_invoices", invoice_type="sales-return"),
     "purchases_total": total("supplier_invoices", invoice_type="purchase"),
-    "purchase_returns_total": total("supplier_invoices", invoice_type="purchase_return"),
-    "net_purchases": total("supplier_invoices", invoice_type="purchase") - total("supplier_invoices", invoice_type="purchase_return"),
+    "purchase_returns_total": total("supplier_invoices", invoice_type="purchase-return"),
+    "net_purchases": total("supplier_invoices", invoice_type="purchase") - total("supplier_invoices", invoice_type="purchase-return"),
     "customer_invoice_outstanding": sum(i["balance"] for i in data["customer_invoices"]),
     "supplier_invoice_outstanding": sum(i["balance"] for i in data["supplier_invoices"]),
     "customers_current_balance_sum": total("customers", "current_balance"),

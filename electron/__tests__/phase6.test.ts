@@ -88,6 +88,22 @@ describe('backup round-trip', () => {
     expect(got?.total).toBe(250.5);
   });
 
+  it('normalizes underscore return types from old backups (D12)', async () => {
+    const dst = freshDb('norm.db');
+    await seedIfEmpty(dst);
+    const backup = {
+      meta: { app: 'DistribPro', version: 1, created_at: '2026-10-01T00:00:00Z', tables: { customers: 1, customer_invoices: 1 } },
+      data: {
+        customers: [{ id: 'c-1', name: 'Old Cust', phone: null, address: null, city: null, opening_balance: 0, current_balance: 0, balance_type: 'receivable', created_at: '2026-10-01T00:00:00Z' }],
+        customer_invoices: [{ id: 'i-1', invoice_no: 'SR-1', customer_id: 'c-1', invoice_date: '2026-10-02', due_date: null, subtotal: 100, discount: 0, tax: 0, total: 100, paid_amount: 100, balance: 0, status: 'paid', invoice_type: 'sales_return', payment_type: 'cash', notes: null, created_at: '2026-10-02T00:00:00Z' }],
+      },
+    };
+    const result = await importBackup(dst, backup);
+    expect(result.errors).toEqual([]);
+    const { listInvoices } = await import('../services/transactionService');
+    expect(await listInvoices(dst, 'customer', 'sales-return')).toHaveLength(1);
+  });
+
   it('rejects files that are not DistribPro backups', async () => {
     const dst = freshDb('dst.db');
     await seedIfEmpty(dst);

@@ -83,6 +83,16 @@ function toLegacyRow(row: Record<string, unknown>, spec: TableSpec): Record<stri
   return out;
 }
 
+/** The old app's database triggers spelled return types with underscores
+ * ('sales_return') while its UI always wrote hyphens ('sales-return') — the
+ * mismatch meant returns never restocked (DECISIONS D12). The new app's
+ * canonical spelling is the UI's hyphen form; normalize on import so any
+ * underscore-typed rows in old backups land correctly. */
+const INVOICE_TYPE_NORMALIZE: Record<string, string> = {
+  sales_return: 'sales-return',
+  purchase_return: 'purchase-return',
+};
+
 function fromLegacyRow(row: Record<string, unknown>, spec: TableSpec): Record<string, unknown> {
   const columns = getTableColumns(spec.table) as Record<string, unknown>;
   const out: Record<string, unknown> = {};
@@ -94,6 +104,10 @@ function fromLegacyRow(row: Record<string, unknown>, spec: TableSpec): Record<st
     else if (spec.qty?.includes(legacyKey)) out[key] = toMilliQty(value as number);
     else if (spec.pct?.includes(legacyKey)) out[key] = toPercentX100(value as number);
     else out[key] = value;
+  }
+  if ((spec.name === 'customer_invoices' || spec.name === 'supplier_invoices')
+    && typeof out.invoiceType === 'string') {
+    out.invoiceType = INVOICE_TYPE_NORMALIZE[out.invoiceType] ?? out.invoiceType;
   }
   return out;
 }

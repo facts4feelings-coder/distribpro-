@@ -61,7 +61,7 @@ sirf product form aur reports me likha/padha jata hai).
 **Faisla:** Nayi service layer me stock ka durust delta formula hoga, har invoice save/delete
 ek transaction me:
 `stock_delta = −(naya_signed_qty) + (purana_signed_qty)`, jahan signed qty document type se hai:
-sale −, sales_return +, purchase +, purchase_return −.
+sale −, sales-return +, purchase +, purchase-return −.
 Phase 4 me is ke unit tests pehle likhe jayenge. **Ye bug shayad customer ke "maslon"
 me se ek bara masla hai.**
 
@@ -100,3 +100,18 @@ hui hai. Asal disable-works karna ho to wo migration ke baad ki alag feature hai
 (device ko kabhi table check karna pare ga, jo "fully offline key" wale dawe se
 takrata hai) — faisla baad me hoga.
 
+## D12 — invoice_type ki spelling: hyphen canonical hai (Phase 7 me pakra gaya)
+Purani app me do spellings chalti theen: **UI hamesha hyphen** likhti thi
+('sales-return', 'purchase-return' — SalesReturns/PurchaseReturns pages,
+recalcCustomerBalance, reports), lekin **database trigger underscore**
+check karta tha ('sales_return', 'purchase_return' — migration
+20261017075401 + offlineSchema copy). Nateeja: UI se bani hui sales return
+par trigger ELSE branch me ja kar **stock bilkul wapas nahi karta tha**, aur
+purchase return par bhi stock kam nahi hota tha — returns sirf balance me
+dikhti theen, stock me kabhi nahi. Ye D6 ke sath mil kar purani app ke stock
+garbar ki doosri bari wajah hai.
+**Faisla:** canonical spelling hyphen wali hai (asal customer data bhi UI se
+hyphen me hi likha gaya hoga). Importer (backupService) purani backup files
+me agar underscore wali type mile to import par hyphen me normalize kar
+deta hai. Golden dataset bhi hyphen par regenerate kar diya gaya hai
+(Phase 0 me wo trigger file ko dekh kar underscore me ban gaya tha).
