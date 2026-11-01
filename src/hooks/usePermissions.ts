@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 
 const ALL_PERMISSIONS = [
   'dashboard', 'quick-sale', 'invoices', 'returns',
@@ -22,13 +22,13 @@ export function usePermissions(userId: string | undefined) {
     }
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from('user_permissions')
-        .select('permissions')
-        .eq('user_id', userId)
-        .maybeSingle();
-      // null row = unrestricted (full access); empty array would mean locked out
-      setPermissions(data ? (data.permissions as string[]) : null);
+      try {
+        // null row = unrestricted (full access); empty array would mean locked out
+        const perms = await api.permissions.get(userId);
+        setPermissions(perms);
+      } catch {
+        setPermissions(null);
+      }
       setLoading(false);
     })();
   }, [userId]);

@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "electron:dev": "OFFLINE=1 vite build && electron electron/main.cjs",
+    "electron:dev": "OFFLINE=1 vite build && npm run build:electron && electron electron-dist/main.cjs",
     "electron:build": "OFFLINE=1 vite build && electron-builder --win --x64",
     "dist": "OFFLINE=1 vite build && electron-builder --win nsis --x64",
     "build:electron": "esbuild electron/main.ts --bundle --platform=node --format=cjs --external:electron --external:better-sqlite3 --outfile=electron-dist/main.cjs && esbuild electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=electron-dist/preload.cjs",

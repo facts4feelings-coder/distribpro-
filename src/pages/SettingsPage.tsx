@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Save, Building2, Printer, Check, UserPlus, Trash2, Shield, User, Lock, DatabaseBackup } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { listAdminUsers, createAdminUser, deleteAdminUser, updateAdminUser } from '@/lib/localAdmin';
+import { api, settingsDtoToLegacy, settingsLegacyToDtoPatch } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { ALL_PERMISSIONS } from '@/hooks/usePermissions';
 import type { Settings } from '@/lib/types';
@@ -54,9 +53,10 @@ export default function SettingsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('settings').select('*').limit(1).maybeSingle();
+    const dto = await api.settings.get().catch(() => null);
+    const data = dto ? settingsDtoToLegacy(dto) : null;
     if (data) {
-      setSettings(data as Settings);
+      setSettings(data);
       setForm({
         company_name: data.company_name, company_address: data.company_address ?? '', company_phone: data.company_phone ?? '',
         company_email: data.company_email ?? '', currency_symbol: data.currency_symbol, tax_rate: String(data.tax_rate),
@@ -73,20 +73,18 @@ export default function SettingsPage() {
 
   const loadAdminUsers = useCallback(async () => {
     setAdminLoading(true);
-    const [usersRes, permsRes] = await Promise.all([
-      listAdminUsers(),
-      supabase.from('user_permissions').select('user_id, permissions'),
+    const [usersRes, permRows] = await Promise.all([
+      api.users.list().catch(() => ({ users: [] as { id: string; username: string }[] })),
+      api.permissions.listAll().catch(() => [] as { userId: string; permissions: string[] }[]),
     ]);
     if (Array.isArray(usersRes.users)) {
       setAdminUsers(usersRes.users.map((u) => ({ id: u.id, username: u.username })));
     }
-    if (!permsRes.error && permsRes.data) {
-      const map: Record<string, string[]> = {};
-      for (const row of permsRes.data as { user_id: string; permissions: string[] }[]) {
-        map[row.user_id] = row.permissions ?? [];
-      }
-      setPermMap(map);
+    const map: Record<string, string[]> = {};
+    for (const row of permRows) {
+      map[row.userId] = row.permissions ?? [];
     }
+    setPermMap(map);
     setAdminLoading(false);
   }, []);
 
@@ -104,11 +102,10 @@ export default function SettingsPage() {
       purchase_return_prefix: form.purchase_return_prefix, default_print_format: form.default_print_format,
       thermal_printer_width: form.thermal_printer_width, invoice_footer_note: form.invoice_footer_note || null,
     };
-    if (settings) {
-      await supabase.from('settings').update(payload).eq('id', settings.id);
-    } else {
-      await supabase.from('settings').insert(payload);
-    }
+    // SQLite always has exactly one settings row (seeded on first run);
+    // the service updates it in place.
+    void settings;
+    await api.settings.update(settingsLegacyToDtoPatch(payload)).catch(() => null);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -118,7 +115,7 @@ export default function SettingsPage() {
   const createAdmin = async () => {
     setAdminError(null);
     setAdminBusy(true);
-    const result = await createAdminUser(
+    const result = await api.users.create(
       newAdminUsername,
       newAdminPassword,
       restrictNewAdmin ? newAdminPerms : null
@@ -138,14 +135,14 @@ export default function SettingsPage() {
 
   const deleteAdmin = async (userId: string, username: string) => {
     if (!confirm(`Remove admin access for ${username}?`)) return;
-    await deleteAdminUser(userId);
+    await api.users.delete(userId);
     loadAdminUsers();
   };
 
   const savePerms = async () => {
     if (!editingPermsUser) return;
     setPermBusy(true);
-    const result = await updateAdminUser({
+    const result = await api.users.update({
       userId: editingPermsUser.id,
       username: editingUsername,
       permissions: editingRestricted ? editingPerms : null,

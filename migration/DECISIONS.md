@@ -88,3 +88,15 @@ dataset par ghalat niklega, aur ye farq hi D6 ke bug ka saboot/test hai.
 ## D10 — Feature freeze
 Migration ke doran purani app par naye features nahi banege. Bug fix lazmi ho to
 pehle `main` (baseline) par, phir migration branch me usi logic ko port karna hoga.
+
+## D11 — License registry ka quirk (Phase 2 me note kiya gaya, semantics change nahi)
+License key ki verification hamesha renderer me hoti hai (`src/lib/license.ts`,
+offline checksum) aur wo `licenses` table kabhi nahi parhti — ActivationScreen bhi
+database ko hath nahi lagati. Is liye admin ka kisi key ko "Disable" karna asal me
+customer ke device par **koi asar nahi dalta**, halanke UI ka delete-confirm text
+ulta dawa karta hai ("Devices using it will stop working on next check").
+Phase 2 me registry (list/create/toggle/delete) jesi thi wesi hi SQLite par port
+hui hai. Asal disable-works karna ho to wo migration ke baad ki alag feature hai
+(device ko kabhi table check karna pare ga, jo "fully offline key" wale dawe se
+takrata hai) — faisla baad me hoga.
+

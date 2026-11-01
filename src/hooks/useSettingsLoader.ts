@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 
 export function useSettingsLoader() {
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('settings').select('*').limit(1).maybeSingle();
-      if (!data) return;
-      document.title = `${data.company_name} — DistribPro`;
+      try {
+        const dto = await api.settings.get();
+        document.title = `${dto.companyName} — DistribPro`;
+      } catch {
+        // Title stays default outside Electron (e.g. plain browser dev).
+      }
     })();
   }, []);
 }

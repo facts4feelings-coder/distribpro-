@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { api, type LicenseDto } from '@/lib/api';
 import {
   generateLicenseKey, verifyLicenseKey, getDeviceId,
   type LicenseInfo,
@@ -30,8 +30,12 @@ export default function LicenseKeyGenerator() {
   const [loaded, setLoaded] = useState(false);
 
   const loadKeys = async () => {
-    const { data } = await supabase.from('licenses').select('*').order('created_at', { ascending: false }).limit(100);
-    setRows((data ?? []) as LicenseRow[]);
+    const data = await api.licenses.list().catch(() => [] as LicenseDto[]);
+    setRows(data.map((d) => ({
+      id: d.id, license_key: d.licenseKey, customer_name: d.customerName,
+      max_devices: d.maxDevices, expires_at: d.expiresAt, is_active: d.isActive,
+      notes: d.notes, created_at: d.createdAt,
+    })));
     setLoaded(true);
   };
 
@@ -55,15 +59,15 @@ export default function LicenseKeyGenerator() {
       setSaving(false);
       return;
     }
-    const { error: dbError } = await supabase.from('licenses').insert({
-      license_key: key,
-      customer_name: customerName.trim() || 'Unnamed',
-      max_devices: maxDev,
-      expires_at: expiresAt ? expiresAt.toISOString() : null,
-      is_active: true,
+    const { error: dbError } = await api.licenses.create({
+      licenseKey: key,
+      customerName: customerName.trim() || 'Unnamed',
+      maxDevices: maxDev,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+      isActive: true,
     });
     if (dbError) {
-      setError('Could not save key to the database: ' + dbError.message);
+      setError('Could not save key to the database: ' + dbError);
       setSaving(false);
       return;
     }
@@ -80,13 +84,13 @@ export default function LicenseKeyGenerator() {
   };
 
   const toggleActive = async (row: LicenseRow) => {
-    await supabase.from('licenses').update({ is_active: !row.is_active }).eq('id', row.id);
+    await api.licenses.setActive(row.id, !row.is_active);
     loadKeys();
   };
 
   const removeKey = async (row: LicenseRow) => {
     if (!confirm(`Delete license key ${row.license_key}? Devices using it will stop working on next check.`)) return;
-    await supabase.from('licenses').delete().eq('id', row.id);
+    await api.licenses.delete(row.id);
     loadKeys();
   };
 
