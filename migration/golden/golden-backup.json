@@ -1,0 +1,515 @@
+{
+  "meta": {
+    "app": "distribpro",
+    "version": 1,
+    "created_at": "2026-10-31T00:00:00.000Z",
+    "tables": {
+      "settings": 1,
+      "employees": 2,
+      "routes": 2,
+      "customers": 3,
+      "suppliers": 2,
+      "products": 4,
+      "customer_routes": 3,
+      "customer_invoices": 3,
+      "customer_invoice_items": 4,
+      "supplier_invoices": 2,
+      "supplier_invoice_items": 3,
+      "payment_vouchers": 2,
+      "expense_vouchers": 2,
+      "gate_passes": 1,
+      "salary_payments": 2,
+      "income_options": 1,
+      "user_permissions": 1,
+      "salesman_targets": 1
+    }
+  },
+  "data": {
+    "settings": [
+      {
+        "id": "00005e77-0000-4000-8000-000000000001",
+        "company_name": "Golden Test Distribution",
+        "company_address": "Main Bazaar Road",
+        "company_phone": "0300-0000000",
+        "company_email": null,
+        "currency_symbol": "Rs",
+        "tax_rate": 0,
+        "invoice_prefix": "INV-",
+        "supplier_invoice_prefix": "SUP-",
+        "payment_voucher_prefix": "PV-",
+        "expense_voucher_prefix": "EV-",
+        "gate_pass_prefix": "GP-",
+        "sales_return_prefix": "SR-",
+        "purchase_return_prefix": "PR-",
+        "default_print_format": "a4",
+        "thermal_printer_width": "80mm",
+        "invoice_footer_note": "Thank you for your business!",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "employees": [
+      {
+        "id": "0000e001-0000-4000-8000-000000000001",
+        "name": "Muhammad Saleem",
+        "phone": "0301-1111111",
+        "address": null,
+        "position": "Salesman",
+        "salary": 35000,
+        "hire_date": "2026-01-01",
+        "is_active": true,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000e001-0000-4000-8000-000000000002",
+        "name": "Ali Raza",
+        "phone": "0302-2222222",
+        "address": null,
+        "position": "Helper",
+        "salary": 28000,
+        "hire_date": "2026-02-01",
+        "is_active": true,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "routes": [
+      {
+        "id": "00008001-0000-4000-8000-000000000001",
+        "name": "Monday Route",
+        "description": "City side",
+        "day_of_week": 1,
+        "sort_order": 1,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "00008001-0000-4000-8000-000000000002",
+        "name": "Wednesday Route",
+        "description": "Town side",
+        "day_of_week": 3,
+        "sort_order": 2,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "customers": [
+      {
+        "id": "0000c001-0000-4000-8000-000000000001",
+        "name": "Ahmed Traders",
+        "phone": "0321-1111111",
+        "address": "Shop 1",
+        "city": "Lahore",
+        "opening_balance": 0,
+        "current_balance": 0,
+        "balance_type": "receivable",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c001-0000-4000-8000-000000000002",
+        "name": "Bilal Store",
+        "phone": "0322-2222222",
+        "address": "Shop 2",
+        "city": "Karachi",
+        "opening_balance": 0,
+        "current_balance": 2000,
+        "balance_type": "receivable",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c001-0000-4000-8000-000000000003",
+        "name": "City Mart",
+        "phone": "0323-3333333",
+        "address": "Shop 3",
+        "city": "Multan",
+        "opening_balance": 5000,
+        "current_balance": 5000,
+        "balance_type": "receivable",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "suppliers": [
+      {
+        "id": "00005001-0000-4000-8000-000000000001",
+        "name": "Punjab Foods",
+        "phone": "0331-1111111",
+        "address": "Warehouse 1",
+        "city": "Lahore",
+        "opening_balance": 0,
+        "current_balance": 20000,
+        "balance_type": "payable",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "00005001-0000-4000-8000-000000000002",
+        "name": "Sindh Packaging",
+        "phone": "0332-2222222",
+        "address": "Warehouse 2",
+        "city": "Karachi",
+        "opening_balance": 0,
+        "current_balance": 0,
+        "balance_type": "payable",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "products": [
+      {
+        "id": "00009001-0000-4000-8000-000000000001",
+        "name": "Cooking Oil 1L",
+        "sku": "OIL-1L",
+        "category": "Grocery",
+        "unit": "pcs",
+        "purchase_price": 400,
+        "sale_price": 500,
+        "stock_quantity": 142,
+        "reorder_level": 10,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "00009001-0000-4000-8000-000000000002",
+        "name": "Rice 5kg",
+        "sku": "RICE-5",
+        "category": "Grocery",
+        "unit": "bag",
+        "purchase_price": 150,
+        "sale_price": 200,
+        "stock_quantity": 45,
+        "reorder_level": 5,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "00009001-0000-4000-8000-000000000003",
+        "name": "Desi Ghee 1kg",
+        "sku": "GHEE-1",
+        "category": "Grocery",
+        "unit": "pcs",
+        "purchase_price": 1000,
+        "sale_price": 1500,
+        "stock_quantity": 18,
+        "reorder_level": 3,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "00009001-0000-4000-8000-000000000004",
+        "name": "Sugar 1kg",
+        "sku": "SUG-1",
+        "category": "Grocery",
+        "unit": "pcs",
+        "purchase_price": 250,
+        "sale_price": 350,
+        "stock_quantity": 40,
+        "reorder_level": 10,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "customer_routes": [
+      {
+        "id": "0000c801-0000-4000-8000-000000000001",
+        "customer_id": "0000c001-0000-4000-8000-000000000001",
+        "route_id": "00008001-0000-4000-8000-000000000001",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c801-0000-4000-8000-000000000002",
+        "customer_id": "0000c001-0000-4000-8000-000000000002",
+        "route_id": "00008001-0000-4000-8000-000000000001",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c801-0000-4000-8000-000000000003",
+        "customer_id": "0000c001-0000-4000-8000-000000000003",
+        "route_id": "00008001-0000-4000-8000-000000000002",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "customer_invoices": [
+      {
+        "id": "0000c1a0-0000-4000-8000-000000000001",
+        "invoice_no": "INV-0001",
+        "customer_id": "0000c001-0000-4000-8000-000000000001",
+        "invoice_date": "2026-10-05",
+        "due_date": null,
+        "subtotal": 6000,
+        "discount": 0,
+        "tax": 0,
+        "total": 6000,
+        "paid_amount": 6000,
+        "balance": 0,
+        "status": "paid",
+        "invoice_type": "sale",
+        "payment_type": "cash",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c1a0-0000-4000-8000-000000000002",
+        "invoice_no": "INV-0002",
+        "customer_id": "0000c001-0000-4000-8000-000000000002",
+        "invoice_date": "2026-10-06",
+        "due_date": null,
+        "subtotal": 3000,
+        "discount": 0,
+        "tax": 0,
+        "total": 3000,
+        "paid_amount": 1000,
+        "balance": 2000,
+        "status": "unpaid",
+        "invoice_type": "sale",
+        "payment_type": "credit",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c1a0-0000-4000-8000-000000000003",
+        "invoice_no": "SR-0001",
+        "customer_id": "0000c001-0000-4000-8000-000000000001",
+        "invoice_date": "2026-10-07",
+        "due_date": null,
+        "subtotal": 1000,
+        "discount": 0,
+        "tax": 0,
+        "total": 1000,
+        "paid_amount": 1000,
+        "balance": 0,
+        "status": "paid",
+        "invoice_type": "sales_return",
+        "payment_type": "cash",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "customer_invoice_items": [
+      {
+        "id": "0000c1b0-0000-4000-8000-000000000001",
+        "invoice_id": "0000c1a0-0000-4000-8000-000000000001",
+        "product_id": "00009001-0000-4000-8000-000000000001",
+        "product_name": "Cooking Oil 1L",
+        "quantity": 10,
+        "unit_price": 500,
+        "discount_percent": 0,
+        "total": 5000,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c1b0-0000-4000-8000-000000000002",
+        "invoice_id": "0000c1a0-0000-4000-8000-000000000001",
+        "product_id": "00009001-0000-4000-8000-000000000002",
+        "product_name": "Rice 5kg",
+        "quantity": 5,
+        "unit_price": 200,
+        "discount_percent": 0,
+        "total": 1000,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c1b0-0000-4000-8000-000000000003",
+        "invoice_id": "0000c1a0-0000-4000-8000-000000000002",
+        "product_id": "00009001-0000-4000-8000-000000000003",
+        "product_name": "Desi Ghee 1kg",
+        "quantity": 2,
+        "unit_price": 1500,
+        "discount_percent": 0,
+        "total": 3000,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000c1b0-0000-4000-8000-000000000004",
+        "invoice_id": "0000c1a0-0000-4000-8000-000000000003",
+        "product_id": "00009001-0000-4000-8000-000000000001",
+        "product_name": "Cooking Oil 1L",
+        "quantity": 2,
+        "unit_price": 500,
+        "discount_percent": 0,
+        "total": 1000,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "supplier_invoices": [
+      {
+        "id": "000051a0-0000-4000-8000-000000000001",
+        "invoice_no": "SUP-0001",
+        "supplier_id": "00005001-0000-4000-8000-000000000001",
+        "invoice_date": "2026-10-03",
+        "due_date": null,
+        "subtotal": 30000,
+        "discount": 0,
+        "tax": 0,
+        "total": 30000,
+        "paid_amount": 10000,
+        "balance": 20000,
+        "status": "unpaid",
+        "invoice_type": "purchase",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "000051a0-0000-4000-8000-000000000002",
+        "invoice_no": "PR-0001",
+        "supplier_id": "00005001-0000-4000-8000-000000000001",
+        "invoice_date": "2026-10-08",
+        "due_date": null,
+        "subtotal": 1250,
+        "discount": 0,
+        "tax": 0,
+        "total": 1250,
+        "paid_amount": 1250,
+        "balance": 0,
+        "status": "paid",
+        "invoice_type": "purchase_return",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "supplier_invoice_items": [
+      {
+        "id": "000051b0-0000-4000-8000-000000000001",
+        "invoice_id": "000051a0-0000-4000-8000-000000000001",
+        "product_id": "00009001-0000-4000-8000-000000000001",
+        "product_name": "Cooking Oil 1L",
+        "quantity": 50,
+        "unit_price": 400,
+        "discount_percent": 0,
+        "total": 20000,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "000051b0-0000-4000-8000-000000000002",
+        "invoice_id": "000051a0-0000-4000-8000-000000000001",
+        "product_id": "00009001-0000-4000-8000-000000000004",
+        "product_name": "Sugar 1kg",
+        "quantity": 40,
+        "unit_price": 250,
+        "discount_percent": 0,
+        "total": 10000,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "000051b0-0000-4000-8000-000000000003",
+        "invoice_id": "000051a0-0000-4000-8000-000000000002",
+        "product_id": "00009001-0000-4000-8000-000000000004",
+        "product_name": "Sugar 1kg",
+        "quantity": 5,
+        "unit_price": 250,
+        "discount_percent": 0,
+        "total": 1250,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "payment_vouchers": [
+      {
+        "id": "00009a70-0000-4000-8000-000000000001",
+        "voucher_no": "PV-0001",
+        "customer_id": "0000c001-0000-4000-8000-000000000002",
+        "supplier_id": null,
+        "voucher_date": "2026-10-06",
+        "amount": 1000,
+        "payment_method": "cash",
+        "reference": "INV-0002",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "00009a70-0000-4000-8000-000000000002",
+        "voucher_no": "PV-0002",
+        "customer_id": null,
+        "supplier_id": "00005001-0000-4000-8000-000000000001",
+        "voucher_date": "2026-10-04",
+        "amount": 10000,
+        "payment_method": "bank",
+        "reference": "SUP-0001",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "expense_vouchers": [
+      {
+        "id": "0000e570-0000-4000-8000-000000000001",
+        "voucher_no": "EV-0001",
+        "expense_date": "2026-10-01",
+        "category": "Rent",
+        "description": "Shop rent October",
+        "amount": 5000,
+        "paid_to": "Landlord",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "0000e570-0000-4000-8000-000000000002",
+        "voucher_no": "EV-0002",
+        "expense_date": "2026-10-09",
+        "category": "Fuel",
+        "description": "Delivery vehicle fuel",
+        "amount": 1500,
+        "paid_to": "Petrol pump",
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "gate_passes": [
+      {
+        "id": "00006a7e-0000-4000-8000-000000000001",
+        "pass_no": "GP-0001",
+        "pass_type": "sales",
+        "customer_id": "0000c001-0000-4000-8000-000000000001",
+        "customer_name": "Ahmed Traders",
+        "pass_date": "2026-10-05",
+        "reference_invoice": "INV-0001",
+        "items_description": "Cooking Oil x10, Rice x5",
+        "total_amount": 6000,
+        "vehicle_no": "LEA-123",
+        "driver_name": "Muhammad Saleem",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "salary_payments": [
+      {
+        "id": "00005a10-0000-4000-8000-000000000001",
+        "employee_id": "0000e001-0000-4000-8000-000000000001",
+        "payment_date": "2026-10-31",
+        "amount": 30000,
+        "month": "2026-10",
+        "payment_method": "cash",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      },
+      {
+        "id": "00005a10-0000-4000-8000-000000000002",
+        "employee_id": "0000e001-0000-4000-8000-000000000002",
+        "payment_date": "2026-10-31",
+        "amount": 28000,
+        "month": "2026-10",
+        "payment_method": "cash",
+        "notes": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "income_options": [
+      {
+        "id": "00001ac0-0000-4000-8000-000000000001",
+        "description": "Scrap sale",
+        "amount": 2000,
+        "income_date": "2026-10-10",
+        "category": "Other",
+        "reference": null,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "user_permissions": [
+      {
+        "user_id": "0000ad01-0000-4000-8000-000000000001",
+        "permissions": [
+          "dashboard",
+          "customers",
+          "invoices",
+          "settings"
+        ],
+        "updated_at": "2026-10-05T09:00:00.000Z"
+      }
+    ],
+    "salesman_targets": [
+      {
+        "id": "00007a80-0000-4000-8000-000000000001",
+        "salesman_name": "Muhammad Saleem",
+        "route_id": "00008001-0000-4000-8000-000000000001",
+        "target_month": "2026-10",
+        "target_amount": 100000,
+        "created_at": "2026-10-05T09:00:00.000Z"
+      }
+    ]
+  }
+}
