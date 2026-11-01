@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search, Printer, FileText, Ticket, Wallet, Undo2, ClipboardList, Eye } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, invoiceDtoToCustomerLegacy, invoiceDtoToSupplierLegacy, invoiceItemDtoToLegacy, paymentVoucherDtoToLegacy, gatePassDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import PrintDocument from '@/components/PrintDocument';
@@ -27,9 +27,10 @@ interface SaleRow {
   items: CustomerInvoiceItem[];
 }
 interface ReturnRow {
-  invoice: SupplierInvoice;
+  invoice: CustomerInvoice | SupplierInvoice;
   supplier: Supplier | null;
-  items: SupplierInvoiceItem[];
+  customer: Customer | null;
+  items: CustomerInvoiceItem[];
 }
 
 export default function PrintRecords() {
@@ -52,17 +53,11 @@ export default function PrintRecords() {
 
   useEffect(() => {
     (async () => {
-      const [salesRes, itemsRes, srRes, prRes, pvRes, gpRes] = await Promise.all([
-        supabase.from('customer_invoices').select('*, customers(name, phone, address, city)').eq('invoice_type', 'sale').order('invoice_date', { ascending: false }).limit(500),
-        supabase.from('customer_invoice_items').select('*').limit(5000),
-        supabase.from('supplier_invoices').select('*, suppliers(name, phone, address, city)').eq('invoice_type', 'sales-return').order('invoice_date', { ascending: false }).limit(200),
-        supabase.from('supplier_invoices').select('*, suppliers(name, phone, address, city)').eq('invoice_type', 'purchase-return').order('invoice_date', { ascending: false }).limit(200),
-        supabase.from('payment_vouchers').select('*, customers(name)').order('voucher_date', { ascending: false }).limit(300),
-        supabase.from('gate_passes').select('*').order('pass_date', { ascending: false }).limit(300),
-      ]);
-
-      const salesList = (salesRes.data ?? []) as unknown as (CustomerInvoice & { customers?: Customer[] | Customer })[];
-      const itemsList = (itemsRes.data ?? []) as CustomerInvoiceItem[];
+      // Sales returns live in customer_invoices — the old page queried the
+      // supplier table for them, so that tab could never show anything.
+      const ds = await api.reports.printDataset().catch(() => null);
+      const salesList = (ds?.sales ?? []).map(invoiceDtoToCustomerLegacy);
+      const itemsList = (ds?.items ?? []).map(invoiceItemDtoToLegacy);
       const itemsByInvoice = new Map<string, CustomerInvoiceItem[]>();
       for (const it of itemsList) {
         const arr = itemsByInvoice.get(it.invoice_id) ?? [];
@@ -72,24 +67,22 @@ export default function PrintRecords() {
 
       const salesRows: SaleRow[] = salesList.map((inv) => ({
         invoice: inv,
-        customer: Array.isArray(inv.customers) ? inv.customers[0] : inv.customers ?? null,
+        customer: inv.customers ?? null,
         items: itemsByInvoice.get(inv.id) ?? [],
       }));
       setSales(salesRows);
 
-      const mapReturns = (rows: unknown): ReturnRow[] => {
-        const list = (rows ?? []) as unknown as (SupplierInvoice & { suppliers?: Supplier[] | Supplier })[];
-        return list.map((inv) => ({
-          invoice: inv,
-          supplier: Array.isArray(inv.suppliers) ? inv.suppliers[0] : inv.suppliers ?? null,
-          items: [],
-        }));
-      };
-      setSalesReturns(mapReturns(srRes.data));
-      setPurchaseReturns(mapReturns(prRes.data));
+      setSalesReturns((ds?.salesReturns ?? []).map((dto) => {
+        const inv = invoiceDtoToCustomerLegacy(dto);
+        return { invoice: inv, supplier: null, customer: inv.customers ?? null, items: itemsByInvoice.get(inv.id) ?? [] };
+      }));
+      setPurchaseReturns((ds?.purchaseReturns ?? []).map((dto) => {
+        const inv = invoiceDtoToSupplierLegacy(dto);
+        return { invoice: inv, supplier: inv.suppliers ?? null, customer: null, items: itemsByInvoice.get(inv.id) ?? [] };
+      }));
 
-      setPayments((pvRes.data ?? []) as (PaymentVoucher & { customers?: Customer | null })[]);
-      setGatePasses((gpRes.data ?? []) as GatePass[]);
+      setPayments((ds?.vouchers ?? []).map(paymentVoucherDtoToLegacy));
+      setGatePasses((ds?.gatePasses ?? []).map(gatePassDtoToLegacy));
       setLoading(false);
     })();
   }, []);
@@ -108,11 +101,11 @@ export default function PrintRecords() {
         );
       case 'sales-returns':
         return salesReturns.filter(
-          (r) => (matches(r.invoice.invoice_no) || matches(r.supplier?.name)) && inDateRange(r.invoice.invoice_date)
+          (r) => (matches(r.invoice.invoice_no) || matches(r.supplier?.name) || matches(r.customer?.name)) && inDateRange(r.invoice.invoice_date)
         );
       case 'purchase-returns':
         return purchaseReturns.filter(
-          (r) => (matches(r.invoice.invoice_no) || matches(r.supplier?.name)) && inDateRange(r.invoice.invoice_date)
+          (r) => (matches(r.invoice.invoice_no) || matches(r.supplier?.name) || matches(r.customer?.name)) && inDateRange(r.invoice.invoice_date)
         );
       case 'payment-vouchers':
         return payments.filter(
@@ -150,7 +143,7 @@ export default function PrintRecords() {
     <PrintDocument type="invoice" format={printFormat} data={{ settings: settings_, invoice: row.invoice, customer: row.customer ?? undefined, items: row.items }} />
   );
   const returnDoc = (type: 'sales-return' | 'purchase-return', row: ReturnRow, settings_: Settings) => (
-    <PrintDocument type={type} format={printFormat} data={{ settings: settings_, invoice: row.invoice, supplier: row.supplier ?? undefined, items: row.items }} />
+    <PrintDocument type={type} format={printFormat} data={{ settings: settings_, invoice: row.invoice, supplier: row.supplier ?? undefined, customer: row.customer ?? undefined, items: row.items }} />
   );
   const paymentDoc = (row: PaymentVoucher & { customers?: Customer | null }, settings_: Settings) => (
     <PrintDocument type="payment-voucher" format={printFormat} data={{ settings: settings_, voucher: row, customer: row.customers ?? undefined }} />
@@ -263,7 +256,7 @@ export default function PrintRecords() {
                 <tr key={row.invoice.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
                   <td className="px-4 py-3 font-semibold text-slate-800">{row.invoice.invoice_no}</td>
                   <td className="px-4 py-3 text-slate-500">{formatDate(row.invoice.invoice_date)}</td>
-                  <td className="px-4 py-3 text-slate-700">{row.supplier?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-700">{row.supplier?.name ?? row.customer?.name ?? '—'}</td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-800">{formatCurrency(row.invoice.total, sym)}</td>
                   <td className="px-4 py-3 text-right">
                     {renderRowActions(() =>

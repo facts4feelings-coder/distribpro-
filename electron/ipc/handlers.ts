@@ -21,6 +21,11 @@ import {
   type PaymentVoucherInput, type ExpenseVoucherInput, type GatePassInput,
 } from '../services/transactionService';
 import {
+  dashboardStats, printDataset, reportsDataset,
+  listSalesmanTargets, createSalesmanTarget, updateSalesmanTarget, deleteSalesmanTarget,
+  type SalesmanTargetInput,
+} from '../services/reportsService';
+import {
   listCustomers, createCustomer, bulkCreateCustomers, updateCustomer, deleteCustomer, getCustomer,
   getProduct,
   listSuppliers, createSupplier, bulkCreateSuppliers, updateSupplier, deleteSupplier,
@@ -124,7 +129,15 @@ export function registerHandlers(ipc: IpcMainLike, getDb: () => Db): void {
   ipc.handle('gatePasses:create', async (_e, input: GatePassInput) => createGatePass(getDb(), input));
   ipc.handle('gatePasses:update', async (_e, id: string, input: GatePassInput) => updateGatePass(getDb(), id, input));
   ipc.handle('gatePasses:delete', async (_e, id: string) => deleteGatePass(getDb(), id));
-  // Phase 5+: reports:*, backup:* …
+  // Reports (Phase 5)
+  ipc.handle('reports:dashboard', async (_e, today: string) => dashboardStats(getDb(), today));
+  ipc.handle('reports:printDataset', async () => printDataset(getDb()));
+  ipc.handle('reports:dataset', async () => reportsDataset(getDb()));
+  ipc.handle('targets:list', async (_e, month: string) => listSalesmanTargets(getDb(), month));
+  ipc.handle('targets:create', async (_e, input: SalesmanTargetInput) => createSalesmanTarget(getDb(), input));
+  ipc.handle('targets:update', async (_e, id: string, input: SalesmanTargetInput) => updateSalesmanTarget(getDb(), id, input));
+  ipc.handle('targets:delete', async (_e, id: string) => deleteSalesmanTarget(getDb(), id));
+  // Phase 6: backup:* …
 }
 
 export type { LicenseDto };

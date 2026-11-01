@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Calendar, Download, Printer, TrendingUp, FileText, Wallet, ShoppingCart } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, invoiceDtoToCustomerLegacy, paymentVoucherDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { CustomerInvoice, PaymentVoucher } from '@/lib/types';
@@ -28,21 +28,16 @@ export default function DailySalesSummary() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let invQuery = supabase.from('customer_invoices').select('invoice_date, total, paid_amount, discount, balance, invoice_type').eq('invoice_type', 'sale');
-    let payQuery = supabase.from('payment_vouchers').select('voucher_date, amount');
-
-    if (dateFrom) {
-      invQuery = invQuery.gte('invoice_date', dateFrom);
-      payQuery = payQuery.gte('voucher_date', dateFrom);
-    }
-    if (dateTo) {
-      invQuery = invQuery.lte('invoice_date', dateTo);
-      payQuery = payQuery.lte('voucher_date', dateTo);
-    }
-
-    const [invRes, payRes] = await Promise.all([invQuery, payQuery]);
-    const invoices = (invRes.data ?? []) as (Pick<CustomerInvoice, 'invoice_date' | 'total' | 'paid_amount' | 'discount' | 'balance'> & { invoice_type: string })[];
-    const payments = (payRes.data ?? []) as Pick<PaymentVoucher, 'voucher_date' | 'amount'>[];
+    const ds = await api.reports.dataset().catch(() => null);
+    const invoices = (ds?.customerInvoices ?? [])
+      .map(invoiceDtoToCustomerLegacy)
+      .filter((i) => i.invoice_type === 'sale'
+        && (!dateFrom || i.invoice_date >= dateFrom)
+        && (!dateTo || i.invoice_date <= dateTo));
+    const payments = (ds?.paymentVouchers ?? [])
+      .map(paymentVoucherDtoToLegacy)
+      .filter((p) => (!dateFrom || p.voucher_date >= dateFrom)
+        && (!dateTo || p.voucher_date <= dateTo));
 
     const dayMap = new Map<string, DaySummary>();
 

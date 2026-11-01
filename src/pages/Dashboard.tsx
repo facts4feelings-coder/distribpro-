@@ -3,7 +3,7 @@ import {
   Users, Truck, Package, FileText, Wallet, TrendingUp, AlertTriangle, Ticket,
   ShoppingCart, Route, BarChart3, ArrowRight, ChevronRight,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency } from '@/lib/utils';
 import type { PageId } from '@/components/Layout';
@@ -26,33 +26,8 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: PageId) =
 
   useEffect(() => {
     (async () => {
-      const [c, s, p, ci, si, pv, gp, ls] = await Promise.all([
-        supabase.from('customers').select('*', { count: 'exact', head: true }),
-        supabase.from('suppliers').select('*', { count: 'exact', head: true }),
-        supabase.from('products').select('*', { count: 'exact', head: true }),
-        supabase.from('customer_invoices').select('balance').eq('status', 'unpaid').eq('invoice_type', 'sale'),
-        supabase.from('supplier_invoices').select('balance').eq('status', 'unpaid').eq('invoice_type', 'purchase'),
-        supabase.from('payment_vouchers').select('amount').gte('voucher_date', new Date().toISOString().split('T')[0]),
-        supabase.from('gate_passes').select('*', { count: 'exact', head: true }).gte('pass_date', new Date().toISOString().split('T')[0]),
-        supabase.from('products').select('name, stock_quantity, reorder_level'),
-      ]);
-
-      const receivable = (ci.data ?? []).reduce((sum, r) => sum + (r.balance || 0), 0);
-      const payable = (si.data ?? []).reduce((sum, r) => sum + (r.balance || 0), 0);
-      const todayPayments = (pv.data ?? []).reduce((sum, r) => sum + (r.amount || 0), 0);
-      const lowStock = (ls.data ?? []).filter((p: { stock_quantity: number; reorder_level: number }) => p.stock_quantity <= p.reorder_level).length;
-
-      setStats({
-        customers: c.count ?? 0,
-        suppliers: s.count ?? 0,
-        products: p.count ?? 0,
-        pendingInvoices: (ci.data ?? []).length,
-        receivable,
-        payable,
-        todayPayments,
-        lowStock,
-        gatePasses: gp.count ?? 0,
-      });
+      const stats = await api.reports.dashboard(new Date().toISOString().split('T')[0]).catch(() => null);
+      if (stats) setStats(stats);
       setLoading(false);
     })();
   }, []);

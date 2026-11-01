@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Download, AlertCircle, Clock, Printer } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, invoiceDtoToCustomerLegacy, invoiceDtoToSupplierLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO } from '@/lib/utils';
 import type { CustomerInvoice, SupplierInvoice } from '@/lib/types';
@@ -16,12 +16,13 @@ export default function ReceivablePayableReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [rec, pay] = await Promise.all([
-      supabase.from('customer_invoices').select('*, customers(name)').eq('invoice_type', 'sale').gt('balance', 0).order('invoice_date'),
-      supabase.from('supplier_invoices').select('*, suppliers(name)').eq('invoice_type', 'purchase').gt('balance', 0).order('invoice_date'),
-    ]);
-    setReceivables((rec.data ?? []) as (CustomerInvoice & { customers?: { name: string } })[]);
-    setPayables((pay.data ?? []) as (SupplierInvoice & { suppliers?: { name: string } })[]);
+    const ds = await api.reports.dataset().catch(() => null);
+    setReceivables((ds?.customerInvoices ?? [])
+      .map(invoiceDtoToCustomerLegacy)
+      .filter((i) => i.invoice_type === 'sale' && i.balance > 0));
+    setPayables((ds?.supplierInvoices ?? [])
+      .map(invoiceDtoToSupplierLegacy)
+      .filter((i) => i.invoice_type === 'purchase' && i.balance > 0));
     setLoading(false);
   }, []);
 

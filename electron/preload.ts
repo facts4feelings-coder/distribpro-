@@ -109,6 +109,17 @@ contextBridge.exposeInMainWorld('api', {
     update: (id: string, input: unknown) => ipcRenderer.invoke('gatePasses:update', id, input),
     delete: (id: string) => ipcRenderer.invoke('gatePasses:delete', id),
   },
+  reports: {
+    dashboard: (today: string) => ipcRenderer.invoke('reports:dashboard', today),
+    printDataset: () => ipcRenderer.invoke('reports:printDataset'),
+    dataset: () => ipcRenderer.invoke('reports:dataset'),
+  },
+  targets: {
+    list: (month: string) => ipcRenderer.invoke('targets:list', month),
+    create: (input: unknown) => ipcRenderer.invoke('targets:create', input),
+    update: (id: string, input: unknown) => ipcRenderer.invoke('targets:update', id, input),
+    delete: (id: string) => ipcRenderer.invoke('targets:delete', id),
+  },
   licenses: {
     list: () => ipcRenderer.invoke('licenses:list'),
     create: (input: unknown) => ipcRenderer.invoke('licenses:create', input),

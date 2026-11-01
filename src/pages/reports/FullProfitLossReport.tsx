@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Download, Printer, TrendingUp, TrendingDown, DollarSign, Calendar, ArrowRight } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, invoiceDtoToCustomerLegacy, invoiceItemDtoToLegacy, expenseVoucherDtoToLegacy, salaryPaymentDtoToLegacy, incomeDtoToLegacy, productDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency } from '@/lib/utils';
 import type { CustomerInvoiceItem, ExpenseVoucher, SalaryPayment, IncomeOption } from '@/lib/types';
@@ -36,48 +36,21 @@ export default function FullProfitLossReport() {
   const load = useCallback(async () => {
     setLoading(true);
 
-    let salesQuery = supabase.from('customer_invoices').select('total, discount, paid_amount, balance, invoice_type, invoice_date');
-    let returnsQuery = supabase.from('customer_invoices').select('total, discount, paid_amount, balance, invoice_type, invoice_date');
-    let itemsQuery = supabase.from('customer_invoice_items').select('product_name, quantity, unit_price, total, product_id');
-    let expQuery = supabase.from('expense_vouchers').select('*');
-    let salQuery = supabase.from('salary_payments').select('*');
-    let incQuery = supabase.from('income_options').select('*');
-    const prodQuery = supabase.from('products').select('id, name, purchase_price, sale_price');
-
-    if (dateFrom) {
-      salesQuery = salesQuery.gte('invoice_date', dateFrom);
-      returnsQuery = returnsQuery.gte('invoice_date', dateFrom);
-      itemsQuery = itemsQuery.gte('created_at', dateFrom);
-      expQuery = expQuery.gte('expense_date', dateFrom);
-      salQuery = salQuery.gte('payment_date', dateFrom);
-      incQuery = incQuery.gte('income_date', dateFrom);
-    }
-    if (dateTo) {
-      salesQuery = salesQuery.lte('invoice_date', dateTo);
-      returnsQuery = returnsQuery.lte('invoice_date', dateTo);
-      itemsQuery = itemsQuery.lte('created_at', dateTo + 'T23:59:59');
-      expQuery = expQuery.lte('expense_date', dateTo);
-      salQuery = salQuery.lte('payment_date', dateTo);
-      incQuery = incQuery.lte('income_date', dateTo);
-    }
-
-    const [salesRes, returnsRes, itemsRes, expRes, salRes, incRes, prodRes] = await Promise.all([
-      salesQuery,
-      returnsQuery,
-      itemsQuery,
-      expQuery,
-      salQuery,
-      incQuery,
-      prodQuery,
-    ]);
-
-    const salesInvoices = ((salesRes.data ?? []) as { total: number; discount: number; invoice_date: string; invoice_type: string }[]).filter((i) => i.invoice_type === 'sale');
-    const returnInvoices = ((returnsRes.data ?? []) as { total: number; discount: number; invoice_date: string; invoice_type: string }[]).filter((i) => i.invoice_type === 'sales_return');
-    const salesItems = (itemsRes.data ?? []) as CustomerInvoiceItem[];
-    const expenses = (expRes.data ?? []) as ExpenseVoucher[];
-    const salaries = (salRes.data ?? []) as SalaryPayment[];
-    const incomes = (incRes.data ?? []) as IncomeOption[];
-    const products = (prodRes.data ?? []) as { id: string; name: string; purchase_price: number; sale_price: number }[];
+    const ds = await api.reports.dataset().catch(() => null);
+    const inRange = (d: string) => (!dateFrom || d >= dateFrom) && (!dateTo || d <= dateTo);
+    const allInvoices = (ds?.customerInvoices ?? []).map(invoiceDtoToCustomerLegacy);
+    const salesInvoices = allInvoices.filter((i) => i.invoice_type === 'sale' && inRange(i.invoice_date));
+    // Fixed in migration: the old page filtered invoice_type 'sales_return'
+    // (underscore) but the stored value is 'sales-return', so returns were
+    // never deducted in Full P&L.
+    const returnInvoices = allInvoices.filter((i) => i.invoice_type === 'sales-return' && inRange(i.invoice_date));
+    const salesItems = (ds?.customerItems ?? [])
+      .map(invoiceItemDtoToLegacy)
+      .filter((i) => (!dateFrom || i.created_at >= dateFrom) && (!dateTo || i.created_at <= dateTo + 'T23:59:59'));
+    const expenses = (ds?.expenseVouchers ?? []).map(expenseVoucherDtoToLegacy).filter((e) => inRange(e.expense_date));
+    const salaries = (ds?.salaryPayments ?? []).map(salaryPaymentDtoToLegacy).filter((p) => inRange(p.payment_date));
+    const incomes = (ds?.income ?? []).map(incomeDtoToLegacy).filter((i) => inRange(i.income_date));
+    const products = (ds?.products ?? []).map(productDtoToLegacy);
 
     const productMap = new Map<string, number>();
     products.forEach((p) => productMap.set(p.id, p.purchase_price));

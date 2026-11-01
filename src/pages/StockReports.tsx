@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Search, Download, Package, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, productDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/lib/types';
@@ -14,8 +14,8 @@ export default function StockReports() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('products').select('*').order('name');
-    setProducts((data ?? []) as Product[]);
+    const data = await api.products.list().catch(() => []);
+    setProducts(data.map(productDtoToLegacy));
     setLoading(false);
   }, []);
 

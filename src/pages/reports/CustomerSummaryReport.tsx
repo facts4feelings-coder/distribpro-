@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Search, Download, Printer, Users, TrendingUp, Wallet, FileText, BookOpen, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, invoiceDtoToCustomerLegacy, paymentVoucherDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { printHtml } from '@/lib/reportPrint';
@@ -29,15 +29,10 @@ export default function CustomerSummaryReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [custRes, invRes, payRes] = await Promise.all([
-      supabase.from('customers').select('*').order('name'),
-      supabase.from('customer_invoices').select('customer_id, total, paid_amount, balance, invoice_type, invoice_date'),
-      supabase.from('payment_vouchers').select('customer_id, amount, voucher_date'),
-    ]);
-
-    const customers = (custRes.data ?? []) as Customer[];
-    const allInvoices = (invRes.data ?? []) as (Pick<CustomerInvoice, 'customer_id' | 'total' | 'paid_amount' | 'balance' | 'invoice_date'> & { invoice_type: string })[];
-    const allPayments = (payRes.data ?? []) as Pick<PaymentVoucher, 'customer_id' | 'amount' | 'voucher_date'>[];
+    const ds = await api.reports.dataset().catch(() => null);
+    const customers = (ds?.customers ?? []).map(partyDtoToLegacy);
+    const allInvoices = (ds?.customerInvoices ?? []).map(invoiceDtoToCustomerLegacy);
+    const allPayments = (ds?.paymentVouchers ?? []).map(paymentVoucherDtoToLegacy);
 
     const invoices = allInvoices.filter((i) => {
       if (i.invoice_type !== 'sale') return false;
@@ -231,10 +226,12 @@ function LedgerModal({ customer, onClose, sym }: { customer: Customer; onClose: 
 
   useEffect(() => {
     (async () => {
-      const [invoices, payments] = await Promise.all([
-        supabase.from('customer_invoices').select('*').eq('customer_id', customer.id).order('invoice_date'),
-        supabase.from('payment_vouchers').select('*').eq('customer_id', customer.id).order('voucher_date'),
+      const [invDtos, payDtos] = await Promise.all([
+        api.invoices.listForParty('customer', customer.id).catch(() => []),
+        api.paymentVouchers.listForParty('customer', customer.id).catch(() => []),
       ]);
+      const invoices = { data: invDtos.map(invoiceDtoToCustomerLegacy) };
+      const payments = { data: payDtos.map(paymentVoucherDtoToLegacy) };
 
       type RawEntry = { date: string; description: string; debit: number; credit: number };
       const raw: RawEntry[] = [];

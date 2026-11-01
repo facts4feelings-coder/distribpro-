@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Download, Banknote, Wallet, Calendar, TrendingDown, Printer } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, expenseVoucherDtoToLegacy, salaryPaymentDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency } from '@/lib/utils';
 import type { ExpenseVoucher, SalaryPayment } from '@/lib/types';
@@ -19,19 +19,13 @@ export default function ExpenseReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let expQuery = supabase.from('expense_vouchers').select('*').order('expense_date', { ascending: false });
-    let salQuery = supabase.from('salary_payments').select('*').order('payment_date', { ascending: false });
-    if (dateFrom) {
-      expQuery = expQuery.gte('expense_date', dateFrom);
-      salQuery = salQuery.gte('payment_date', dateFrom);
-    }
-    if (dateTo) {
-      expQuery = expQuery.lte('expense_date', dateTo);
-      salQuery = salQuery.lte('payment_date', dateTo);
-    }
-    const [expRes, salRes] = await Promise.all([expQuery, salQuery]);
-    const expData = (expRes.data ?? []) as ExpenseVoucher[];
-    const salData = (salRes.data ?? []) as SalaryPayment[];
+    const ds = await api.reports.dataset().catch(() => null);
+    const expData = (ds?.expenseVouchers ?? [])
+      .map(expenseVoucherDtoToLegacy)
+      .filter((e) => (!dateFrom || e.expense_date >= dateFrom) && (!dateTo || e.expense_date <= dateTo));
+    const salData = (ds?.salaryPayments ?? [])
+      .map(salaryPaymentDtoToLegacy)
+      .filter((p) => (!dateFrom || p.payment_date >= dateFrom) && (!dateTo || p.payment_date <= dateTo));
     setExpenses(expData);
     setSalaries(salData);
 

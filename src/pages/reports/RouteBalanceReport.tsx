@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Printer, Download, Store, Route as RouteIcon, Wallet } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, routeDtoToLegacy, partyDtoToLegacy, customerRouteDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, dayName } from '@/lib/utils';
 import { printHtml } from '@/lib/reportPrint';
@@ -25,14 +25,10 @@ export default function RouteBalanceReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [r, c, cr] = await Promise.all([
-      supabase.from('routes').select('*').order('sort_order'),
-      supabase.from('customers').select('*').order('name'),
-      supabase.from('customer_routes').select('*'),
-    ]);
-    setRoutes((r.data ?? []) as Route[]);
-    setCustomers((c.data ?? []) as Customer[]);
-    setCustomerRoutes((cr.data ?? []) as CustomerRoute[]);
+    const ds = await api.reports.dataset().catch(() => null);
+    setRoutes((ds?.routes ?? []).map(routeDtoToLegacy));
+    setCustomers((ds?.customers ?? []).map(partyDtoToLegacy));
+    setCustomerRoutes((ds?.customerRoutes ?? []).map(customerRouteDtoToLegacy));
     setLoading(false);
   }, []);
 

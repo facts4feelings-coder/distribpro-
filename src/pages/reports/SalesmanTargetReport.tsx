@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Printer, Download, Target, TrendingUp, Users, Percent, Plus, Pencil, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, salesmanTargetDtoToLegacy, invoiceDtoToCustomerLegacy, routeDtoToLegacy, type SalesmanTargetInput } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, todayISO } from '@/lib/utils';
 import { printHtml } from '@/lib/reportPrint';
@@ -44,20 +44,16 @@ export default function SalesmanTargetReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [targetsRes, invoicesRes, routesRes] = await Promise.all([
-      supabase.from('salesman_targets').select('*, routes(name)').eq('target_month', month).order('salesman_name'),
-      supabase.from('customer_invoices').select('total, invoice_date, customer_id, invoice_type')
-        .gte('invoice_date', `${month}-01`).lt('invoice_date', nextMonth(month))
-        .in('invoice_type', ['sale', 'sales-return']),
-      supabase.from('routes').select('id, name').order('name'),
-    ]);
-    const targets = (targetsRes.data ?? []) as TargetRow[];
+    const ds = await api.reports.dataset().catch(() => null);
+    const targets = (await api.targets.list(month).catch(() => [])).map(salesmanTargetDtoToLegacy) as TargetRow[];
     setTargetsCache(targets);
-    const invoices = (invoicesRes.data ?? []) as { total: number; customer_id: string; invoice_type: string }[];
-    setRoutes((routesRes.data ?? []) as Route[]);
+    const invoices = (ds?.customerInvoices ?? [])
+      .map(invoiceDtoToCustomerLegacy)
+      .filter((i) => i.invoice_date >= `${month}-01` && i.invoice_date < nextMonth(month)
+        && (i.invoice_type === 'sale' || i.invoice_type === 'sales-return'));
+    setRoutes((ds?.routes ?? []).map(routeDtoToLegacy));
 
-    const { data: crData } = await supabase.from('customer_routes').select('customer_id, route_id');
-    const custRoute = new Map<string, string>((crData ?? []).map((cr) => [cr.customer_id, cr.route_id]));
+    const custRoute = new Map<string, string>((ds?.customerRoutes ?? []).map((cr) => [cr.customerId, cr.routeId]));
 
     const routeNames = new Map<string, string>(targets.map((t) => [t.route_id ?? '', t.routes?.name ?? '']));
 
@@ -108,10 +104,14 @@ export default function SalesmanTargetReport() {
       target_month: form.target_month,
       target_amount: amount,
     };
+    const input: SalesmanTargetInput = {
+      salesmanName: payload.salesman_name, routeId: payload.route_id,
+      targetMonth: payload.target_month, targetAmount: payload.target_amount,
+    };
     if (editing) {
-      await supabase.from('salesman_targets').update(payload).eq('id', editing.id);
+      await api.targets.update(editing.id, input);
     } else {
-      await supabase.from('salesman_targets').insert(payload);
+      await api.targets.create(input);
     }
     setModalOpen(false);
     load();
@@ -119,7 +119,7 @@ export default function SalesmanTargetReport() {
 
   const removeTarget = async (id: string) => {
     if (!confirm('Delete this target?')) return;
-    await supabase.from('salesman_targets').delete().eq('id', id);
+    await api.targets.delete(id);
     load();
   };
 

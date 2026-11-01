@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Download, TrendingUp, TrendingDown, DollarSign, Percent, Printer, Layers } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, invoiceItemDtoToLegacy, productDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency } from '@/lib/utils';
 import { printHtml } from '@/lib/reportPrint';
@@ -27,18 +27,11 @@ export default function CategoryProfitReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let salesQuery = supabase.from('customer_invoice_items').select('product_name, quantity, unit_price, total, product_id');
-
-    if (dateFrom) salesQuery = salesQuery.gte('created_at', dateFrom);
-    if (dateTo) salesQuery = salesQuery.lte('created_at', dateTo + 'T23:59:59');
-
-    const [salesRes, productsRes] = await Promise.all([
-      salesQuery,
-      supabase.from('products').select('id, name, category, purchase_price, sale_price'),
-    ]);
-
-    const salesItems = (salesRes.data ?? []) as CustomerInvoiceItem[];
-    const products = (productsRes.data ?? []) as { id: string; name: string; category: string | null; purchase_price: number; sale_price: number }[];
+    const ds = await api.reports.dataset().catch(() => null);
+    const salesItems = (ds?.customerItems ?? [])
+      .map(invoiceItemDtoToLegacy)
+      .filter((i) => (!dateFrom || i.created_at >= dateFrom) && (!dateTo || i.created_at <= dateTo + 'T23:59:59'));
+    const products = (ds?.products ?? []).map(productDtoToLegacy);
 
     const productMap = new Map(products.map((p) => [p.id, p]));
 

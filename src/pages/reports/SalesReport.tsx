@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Search, Download, TrendingUp, Calendar, FileText, Printer } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, invoiceDtoToCustomerLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { CustomerInvoice } from '@/lib/types';
@@ -18,11 +18,13 @@ export default function SalesReport() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from('customer_invoices').select('*, customers(name)').eq('invoice_type', 'sale').order('invoice_date', { ascending: false });
-    if (dateFrom) query = query.gte('invoice_date', dateFrom);
-    if (dateTo) query = query.lte('invoice_date', dateTo);
-    const { data } = await query;
-    setInvoices((data ?? []) as (CustomerInvoice & { customers?: { name: string } })[]);
+    const ds = await api.reports.dataset().catch(() => null);
+    const data = (ds?.customerInvoices ?? [])
+      .map(invoiceDtoToCustomerLegacy)
+      .filter((i) => i.invoice_type === 'sale'
+        && (!dateFrom || i.invoice_date >= dateFrom)
+        && (!dateTo || i.invoice_date <= dateTo));
+    setInvoices(data);
     setLoading(false);
   }, [dateFrom, dateTo]);
 

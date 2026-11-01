@@ -355,6 +355,55 @@ export function gatePassInputFromLegacy(p: {
   };
 }
 
+// ---------------------------------------------------------------- Phase 5
+export interface DashboardStats {
+  customers: number; suppliers: number; products: number; pendingInvoices: number;
+  receivable: number; payable: number; todayPayments: number; lowStock: number; gatePasses: number;
+}
+export interface PrintDataset {
+  sales: InvoiceDto[];
+  salesReturns: InvoiceDto[];
+  purchaseReturns: InvoiceDto[];
+  items: InvoiceItemDto[];
+  vouchers: PaymentVoucherDto[];
+  gatePasses: GatePassDto[];
+}
+export interface ReportsDataset {
+  customers: PartyDto[];
+  suppliers: PartyDto[];
+  products: ProductDto[];
+  routes: RouteDto[];
+  customerRoutes: CustomerRouteDto[];
+  customerInvoices: InvoiceDto[];
+  customerItems: InvoiceItemDto[];
+  supplierInvoices: InvoiceDto[];
+  supplierItems: InvoiceItemDto[];
+  paymentVouchers: PaymentVoucherDto[];
+  expenseVouchers: ExpenseVoucherDto[];
+  gatePasses: GatePassDto[];
+  employees: EmployeeDto[];
+  salaryPayments: SalaryPaymentDto[];
+  income: IncomeDto[];
+}
+
+export interface SalesmanTargetDto {
+  id: string; routeId: string | null; salesmanName: string; targetMonth: string;
+  targetAmount: number; createdAt: string | null; routeName: string | null;
+}
+export interface SalesmanTargetInput {
+  routeId: string | null; salesmanName: string; targetMonth: string; targetAmount: number;
+}
+export function salesmanTargetDtoToLegacy(d: SalesmanTargetDto): {
+  id: string; salesman_name: string; route_id: string | null; target_month: string;
+  target_amount: number; created_at: string; routes?: { name: string };
+} {
+  return {
+    id: d.id, salesman_name: d.salesmanName, route_id: d.routeId, target_month: d.targetMonth,
+    target_amount: d.targetAmount, created_at: d.createdAt ?? '',
+    routes: d.routeName ? { name: d.routeName } : undefined,
+  };
+}
+
 export interface UpdateUserOpts {
   userId: string;
   username: string;
@@ -460,6 +509,17 @@ interface DistribProApi {
     update(id: string, input: GatePassInput): Promise<{ error?: string }>;
     delete(id: string): Promise<{ error?: string }>;
   };
+  reports: {
+    dashboard(today: string): Promise<DashboardStats>;
+    printDataset(): Promise<PrintDataset>;
+    dataset(): Promise<ReportsDataset>;
+  };
+  targets: {
+    list(month: string): Promise<SalesmanTargetDto[]>;
+    create(input: SalesmanTargetInput): Promise<{ error?: string }>;
+    update(id: string, input: SalesmanTargetInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
 }
 
 interface CrudApi<Dto, Input> {
@@ -535,5 +595,11 @@ export const api: DistribProApi = {
   },
   get gatePasses() {
     return bridge().gatePasses;
+  },
+  get reports() {
+    return bridge().reports;
+  },
+  get targets() {
+    return bridge().targets;
   },
 };
