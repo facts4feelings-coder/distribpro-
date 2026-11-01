@@ -25,7 +25,7 @@ export default function LicenseExpiredScreen({ state, onReActivate }: { state: L
         </p>
 
         <div className="mt-8 flex flex-col gap-3 items-center">
-          <button onClick={onReActivate} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+          <button onClick={onReActivate} className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all">
             <RefreshCw size={18} /> Enter New License Key
           </button>
           <button

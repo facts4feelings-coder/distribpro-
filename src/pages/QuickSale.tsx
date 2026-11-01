@@ -291,7 +291,7 @@ export default function QuickSale() {
           </table>
 
           <div className="flex gap-3">
-            <button onClick={openPrint} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+            <button onClick={openPrint} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
               <Printer size={18} /> Print Invoice
             </button>
             <button onClick={startNewSale} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
@@ -307,7 +307,7 @@ export default function QuickSale() {
     <div className="max-w-3xl mx-auto space-y-4">
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-center gap-2 mb-5">
-          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
             <ShoppingCart size={20} className="text-white" />
           </div>
           <div>
@@ -406,7 +406,7 @@ export default function QuickSale() {
         </div>
 
         <div className="flex gap-3 pt-4">
-          <button onClick={save} disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium transition-all">
+          <button onClick={save} disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium transition-all">
             <ShoppingCart size={18} /> {saving ? 'Saving...' : 'Complete Sale'}
           </button>
           <button onClick={resetForm} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Clear</button>

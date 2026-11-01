@@ -83,8 +83,8 @@ export default function InvoiceLineItems({
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden">
       {onBarcodeScan && (
-        <div className="bg-blue-50/60 px-4 py-2.5 flex items-center gap-2 border-b border-blue-100">
-          <ScanLine size={16} className="text-blue-600 flex-shrink-0" />
+        <div className="bg-emerald-50/60 px-4 py-2.5 flex items-center gap-2 border-b border-emerald-100">
+          <ScanLine size={16} className="text-emerald-600 flex-shrink-0" />
           <input
             ref={barcodeRef}
             onKeyDown={handleBarcode}
@@ -97,7 +97,7 @@ export default function InvoiceLineItems({
 
       <div className="bg-slate-50 px-4 py-2 flex items-center justify-between">
         <span className="text-sm font-semibold text-slate-700">Line Items — Type product name, press Tab to rate, Enter for next row</span>
-        <button onClick={onAddItem} className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-all">
+        <button onClick={onAddItem} className="flex items-center gap-1 px-2 py-1 text-xs text-emerald-600 hover:bg-emerald-50 rounded transition-all">
           <Plus size={14} /> Add Item
         </button>
       </div>

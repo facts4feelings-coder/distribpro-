@@ -143,7 +143,7 @@ export default function LicenseKeyGenerator() {
         </div>
         {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3 mt-4">{error}</div>}
         <div className="flex justify-end mt-4">
-          <button onClick={generate} disabled={saving} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all disabled:opacity-50">
+          <button onClick={generate} disabled={saving} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all disabled:opacity-50">
             {saving ? 'Generating...' : 'Generate Key'}
           </button>
         </div>

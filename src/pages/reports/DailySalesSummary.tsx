@@ -101,7 +101,7 @@ export default function DailySalesSummary() {
     <div className="space-y-4" id="daily-summary-print">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard label="Total Sales" value={formatCurrency(grandSales, sym)} color="bg-blue-50 text-blue-600" icon={<TrendingUp size={20} />} />
+        <SummaryCard label="Total Sales" value={formatCurrency(grandSales, sym)} color="bg-emerald-50 text-emerald-600" icon={<TrendingUp size={20} />} />
         <SummaryCard label="Total Collected" value={formatCurrency(grandPaid + grandPayments, sym)} color="bg-emerald-50 text-emerald-600" icon={<Wallet size={20} />} />
         <SummaryCard label="Outstanding" value={formatCurrency(grandBalance, sym)} color="bg-rose-50 text-rose-600" icon={<FileText size={20} />} />
         <SummaryCard label="Total Invoices" value={String(grandInvoiceCount)} color="bg-amber-50 text-amber-600" icon={<ShoppingCart size={20} />} />
@@ -111,12 +111,12 @@ export default function DailySalesSummary() {
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-slate-400" />
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-emerald-500" />
           <span className="text-slate-400 text-sm">to</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-emerald-500" />
         </div>
         <div className="flex gap-2">
-          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
             <Printer size={18} /> Print
           </button>
           <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-all">

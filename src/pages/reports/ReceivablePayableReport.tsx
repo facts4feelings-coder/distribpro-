@@ -87,13 +87,13 @@ export default function ReceivablePayableReport() {
           <p className="text-2xl font-bold text-slate-800">{formatCurrency(totalPay, sym)}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2"><div className={`w-10 h-10 rounded-lg flex items-center justify-center ${netCash >= 0 ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}><Clock size={20} /></div><span className="text-sm text-slate-500">Net Cash Position</span></div>
+          <div className="flex items-center gap-3 mb-2"><div className={`w-10 h-10 rounded-lg flex items-center justify-center ${netCash >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}><Clock size={20} /></div><span className="text-sm text-slate-500">Net Cash Position</span></div>
           <p className={`text-2xl font-bold ${netCash >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(netCash, sym)}</p>
         </div>
       </div>
 
       <div className="flex justify-end gap-2">
-        <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+        <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
           <Printer size={18} /> Print
         </button>
         <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-all">

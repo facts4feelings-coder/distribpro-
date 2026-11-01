@@ -94,7 +94,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: PageId) =
         </div>
         <button
           onClick={() => onNavigate('quick-sale')}
-          className="self-start sm:self-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm"
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-sm shadow-emerald-600/25"
         >
           <ShoppingCart size={16} />
           New Quick Sale
@@ -104,9 +104,9 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: PageId) =
 
       {/* Financial hero strip */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 lg:p-7 relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-slate-700/30 blur-2xl" />
-          <div className="absolute -bottom-14 -left-6 w-40 h-40 rounded-full bg-sky-500/10 blur-2xl" />
+        <div className="md:col-span-2 rounded-2xl bg-gradient-to-br from-slate-950 via-[#0A1710] to-emerald-950 p-6 lg:p-7 relative overflow-hidden shadow-card">
+          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-emerald-500/15 blur-2xl" />
+          <div className="absolute -bottom-14 -left-6 w-40 h-40 rounded-full bg-teal-400/10 blur-2xl" />
           <div className="relative">
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Net Position</p>
             <p className="mt-2 text-4xl lg:text-5xl font-bold text-white tracking-tight">
@@ -127,8 +127,8 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: PageId) =
 
         <div className="rounded-2xl bg-white border border-slate-200/80 p-6 flex flex-col justify-between shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 ring-1 ring-blue-100 flex items-center justify-center">
-              <TrendingUp size={18} className="text-blue-600" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
+              <TrendingUp size={18} className="text-emerald-600" />
             </div>
             <p className="text-sm font-semibold text-slate-500">Today's Payments</p>
           </div>
@@ -138,7 +138,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (page: PageId) =
           </div>
           <button
             onClick={() => onNavigate('payment-vouchers')}
-            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
           >
             Record a payment <ChevronRight size={15} />
           </button>

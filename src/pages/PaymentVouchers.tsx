@@ -248,14 +248,14 @@ export default function PaymentVouchers() {
         <div className="flex gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vouchers..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vouchers..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm" />
           </div>
           <div className="px-4 py-2.5 bg-emerald-50 rounded-lg flex items-center gap-2">
             <span className="text-sm text-emerald-700">Today's Payments:</span>
             <span className="font-bold text-emerald-700">{formatCurrency(totalToday, sym)}</span>
           </div>
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-600/20">
+        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20">
           <Plus size={18} /> New Payment Voucher
         </button>
       </div>
@@ -305,7 +305,7 @@ export default function PaymentVouchers() {
                     <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(v.amount, sym)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => openPrint(v)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Print"><Printer size={16} /></button>
+                        <button onClick={() => openPrint(v)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Print"><Printer size={16} /></button>
                         <button onClick={() => openEdit(v)} className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" title="Edit"><Pencil size={16} /></button>
                         <button onClick={() => remove(v.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 size={16} /></button>
                       </div>
@@ -326,7 +326,7 @@ export default function PaymentVouchers() {
           </div>
           <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Paid To *</label>
             <div className="flex gap-2 mb-2">
-              <button type="button" onClick={() => setForm({ ...form, payee_type: 'customer' })} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${form.payee_type === 'customer' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Customer</button>
+              <button type="button" onClick={() => setForm({ ...form, payee_type: 'customer' })} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${form.payee_type === 'customer' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Customer</button>
               <button type="button" onClick={() => setForm({ ...form, payee_type: 'supplier' })} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${form.payee_type === 'supplier' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Supplier</button>
             </div>
             {form.payee_type === 'customer' ? (
@@ -344,7 +344,7 @@ export default function PaymentVouchers() {
           </div>
           <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Reference (Cheque/Receipt No)</label><input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} className="input" /></div>
           <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input" rows={2} /></div>
-          <div className="flex gap-3 pt-2"><button onClick={save} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
+          <div className="flex gap-3 pt-2"><button onClick={save} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
         </div>
       </Modal>
 

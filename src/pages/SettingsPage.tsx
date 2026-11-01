@@ -180,7 +180,7 @@ export default function SettingsPage() {
       {/* Company Info */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center"><Building2 size={20} className="text-blue-600" /></div>
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center"><Building2 size={20} className="text-emerald-600" /></div>
           <h3 className="font-bold text-slate-800">Company Information</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -200,7 +200,7 @@ export default function SettingsPage() {
             <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center"><Shield size={20} className="text-emerald-600" /></div>
             <h3 className="font-bold text-slate-800">Admin Users</h3>
           </div>
-          <button onClick={() => { setAdminError(null); setAdminModalOpen(true); }} className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+          <button onClick={() => { setAdminError(null); setAdminModalOpen(true); }} className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
             <UserPlus size={16} /> Add Admin
           </button>
         </div>
@@ -217,7 +217,7 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-sm font-medium text-slate-800">{u.username}</p>
                     {u.id === session?.id ? (
-                      <span className="text-xs text-blue-600">You (current session)</span>
+                      <span className="text-xs text-emerald-600">You (current session)</span>
                     ) : permMap[u.id] ? (
                       <span className="text-xs text-amber-600">Restricted — {permMap[u.id].length} of {ALL_PERMISSIONS.length} sections</span>
                     ) : (
@@ -328,7 +328,7 @@ export default function SettingsPage() {
 
       {/* Save button */}
       <div className="flex justify-end">
-        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
+        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50">
           {saved ? <><Check size={18} /> Saved!</> : <><Save size={18} /> {saving ? 'Saving...' : 'Save Settings'}</>}
         </button>
       </div>
@@ -346,14 +346,14 @@ export default function SettingsPage() {
           </div>
           <div className="border border-slate-200 rounded-lg p-4">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={restrictNewAdmin} onChange={(e) => setRestrictNewAdmin(e.target.checked)} className="w-4 h-4 accent-blue-600" />
+              <input type="checkbox" checked={restrictNewAdmin} onChange={(e) => setRestrictNewAdmin(e.target.checked)} className="w-4 h-4 accent-emerald-600" />
               <span className="text-sm font-medium text-slate-700">Restrict this user to selected sections only</span>
             </label>
             {restrictNewAdmin && (
               <div className="grid grid-cols-2 gap-1.5 mt-3">
                 {ALL_PERMISSIONS.map((key) => (
                   <label key={key} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-                    <input type="checkbox" checked={newAdminPerms.includes(key)} onChange={() => togglePerm(newAdminPerms, setNewAdminPerms, key)} className="w-3.5 h-3.5 accent-blue-600" />
+                    <input type="checkbox" checked={newAdminPerms.includes(key)} onChange={() => togglePerm(newAdminPerms, setNewAdminPerms, key)} className="w-3.5 h-3.5 accent-emerald-600" />
                     {PERMISSION_LABELS[key]}
                   </label>
                 ))}
@@ -362,7 +362,7 @@ export default function SettingsPage() {
           </div>
           {adminError && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">{adminError}</div>}
           <div className="flex gap-3 pt-2">
-            <button onClick={createAdmin} disabled={adminBusy} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all disabled:opacity-50">{adminBusy ? 'Creating...' : 'Create Admin'}</button>
+            <button onClick={createAdmin} disabled={adminBusy} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all disabled:opacity-50">{adminBusy ? 'Creating...' : 'Create Admin'}</button>
             <button onClick={() => setAdminModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button>
           </div>
         </div>
@@ -376,14 +376,14 @@ export default function SettingsPage() {
             <input type="text" value={editingUsername} onChange={(e) => setEditingUsername(e.target.value)} className="input" />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={editingRestricted} onChange={(e) => setEditingRestricted(e.target.checked)} className="w-4 h-4 accent-blue-600" />
+            <input type="checkbox" checked={editingRestricted} onChange={(e) => setEditingRestricted(e.target.checked)} className="w-4 h-4 accent-emerald-600" />
             <span className="text-sm font-medium text-slate-700">Restrict this user to selected sections only</span>
           </label>
           {editingRestricted && (
             <div className="grid grid-cols-2 gap-1.5 border border-slate-200 rounded-lg p-4">
               {ALL_PERMISSIONS.map((key) => (
                 <label key={key} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={editingPerms.includes(key)} onChange={() => togglePerm(editingPerms, setEditingPerms, key)} className="w-3.5 h-3.5 accent-blue-600" />
+                  <input type="checkbox" checked={editingPerms.includes(key)} onChange={() => togglePerm(editingPerms, setEditingPerms, key)} className="w-3.5 h-3.5 accent-emerald-600" />
                   {PERMISSION_LABELS[key]}
                 </label>
               ))}
@@ -403,7 +403,7 @@ export default function SettingsPage() {
           </div>
           {adminError && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">{adminError}</div>}
           <div className="flex gap-3 pt-2">
-            <button onClick={savePerms} disabled={permBusy} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all disabled:opacity-50">{permBusy ? 'Saving...' : 'Save Restrictions'}</button>
+            <button onClick={savePerms} disabled={permBusy} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all disabled:opacity-50">{permBusy ? 'Saving...' : 'Save Restrictions'}</button>
             <button onClick={() => setEditingPermsUser(null)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button>
           </div>
         </div>

@@ -87,10 +87,10 @@ export default function Suppliers() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search suppliers..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm"
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm"
           />
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-600/20">
+        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20">
           <Plus size={18} /> Add Supplier
         </button>
       </div>
@@ -121,7 +121,7 @@ export default function Suppliers() {
                     <td className="px-4 py-3 text-right font-bold text-slate-800">{formatCurrency(s.current_balance, sym)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => setLedgerSupplier(s)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View Ledger">
+                        <button onClick={() => setLedgerSupplier(s)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="View Ledger">
                           <BookOpen size={16} />
                         </button>
                         <button onClick={() => openEdit(s)} className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" title="Edit">
@@ -163,7 +163,7 @@ export default function Suppliers() {
             <input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} className="input" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={save} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button>
+            <button onClick={save} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button>
             <button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button>
           </div>
         </div>
@@ -223,7 +223,7 @@ function SupplierLedgerModal({ supplier, onClose, sym }: { supplier: Supplier; o
           <p className="text-sm text-slate-500">Current Payable Balance</p>
           <p className="text-2xl font-bold text-slate-800">{formatCurrency(supplier.current_balance, sym)}</p>
         </div>
-        <button onClick={printLedger} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+        <button onClick={printLedger} className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
           <Printer size={16} /> Print
         </button>
       </div>

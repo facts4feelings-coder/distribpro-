@@ -276,7 +276,7 @@ export default function SupplierInvoices() {
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search supplier invoices..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search supplier invoices..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm" />
         </div>
         <div className="flex gap-2">
           {selectedIds.size > 0 && (
@@ -284,7 +284,7 @@ export default function SupplierInvoices() {
               <Printer size={18} /> Print {selectedIds.size} {selectedIds.size === 1 ? 'Invoice' : 'Invoices'}
             </button>
           )}
-          <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-600/20">
+          <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20">
             <Plus size={18} /> New Supplier Invoice
           </button>
         </div>
@@ -301,9 +301,9 @@ export default function SupplierInvoices() {
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3 w-10">
-                    <button onClick={toggleSelectAll} className="text-slate-400 hover:text-blue-600 transition-colors">
+                    <button onClick={toggleSelectAll} className="text-slate-400 hover:text-emerald-600 transition-colors">
                       {selectedIds.size === filtered.length && filtered.length > 0
-                        ? <CheckSquare size={16} className="text-blue-600" />
+                        ? <CheckSquare size={16} className="text-emerald-600" />
                         : <Square size={16} />}
                     </button>
                   </th>
@@ -318,11 +318,11 @@ export default function SupplierInvoices() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((inv) => (
-                  <tr key={inv.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.has(inv.id) ? 'bg-blue-50/40' : ''}`}>
+                  <tr key={inv.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.has(inv.id) ? 'bg-emerald-50/40' : ''}`}>
                     <td className="px-4 py-3">
-                      <button onClick={() => toggleSelect(inv.id)} className="text-slate-400 hover:text-blue-600 transition-colors">
+                      <button onClick={() => toggleSelect(inv.id)} className="text-slate-400 hover:text-emerald-600 transition-colors">
                         {selectedIds.has(inv.id)
-                          ? <CheckSquare size={16} className="text-blue-600" />
+                          ? <CheckSquare size={16} className="text-emerald-600" />
                           : <Square size={16} />}
                       </button>
                     </td>
@@ -337,7 +337,7 @@ export default function SupplierInvoices() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => openView(inv)} className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" title="View"><Eye size={16} /></button>
-                        <button onClick={() => openPrint(inv)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Print"><Printer size={16} /></button>
+                        <button onClick={() => openPrint(inv)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Print"><Printer size={16} /></button>
                         <button onClick={() => openEdit(inv)} className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" title="Edit"><Pencil size={16} /></button>
                         <button onClick={() => remove(inv.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 size={16} /></button>
                       </div>
@@ -404,7 +404,7 @@ export default function SupplierInvoices() {
           <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input" rows={2} placeholder="Optional notes" /></div>
 
           <div className="flex gap-3 pt-2">
-            <button onClick={save} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save Invoice</button>
+            <button onClick={save} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save Invoice</button>
             <button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button>
           </div>
         </div>
@@ -436,7 +436,7 @@ export default function SupplierInvoices() {
               <div className="flex justify-between font-bold text-rose-600"><span>Balance:</span><span>{formatCurrency(viewInvoice.balance, sym)}</span></div>
             </div></div>
             <div className="flex gap-3">
-              <button onClick={() => { setPrintEntries([{ invoice: viewInvoice, items: viewItems, supplier: viewSupplier }]); setPrintFormat(normalizeFormat(settings?.default_print_format)); setPrintOpen(true); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+              <button onClick={() => { setPrintEntries([{ invoice: viewInvoice, items: viewItems, supplier: viewSupplier }]); setPrintFormat(normalizeFormat(settings?.default_print_format)); setPrintOpen(true); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
                 <Printer size={18} /> Print Invoice
               </button>
               <button onClick={() => { setViewInvoice(null); setSavedInvoice(null); }} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium transition-all">Close</button>

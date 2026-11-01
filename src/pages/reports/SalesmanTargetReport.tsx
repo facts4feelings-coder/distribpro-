@@ -150,7 +150,7 @@ export default function SalesmanTargetReport() {
     <div className="space-y-4" id="salesman-target-print">
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Salesmen" value={String(rows.length)} color="bg-blue-50 text-blue-600" icon={<Users size={20} />} />
+        <StatCard label="Salesmen" value={String(rows.length)} color="bg-emerald-50 text-emerald-600" icon={<Users size={20} />} />
         <StatCard label="Total Target" value={formatCurrency(totalTarget, sym)} color="bg-amber-50 text-amber-600" icon={<Target size={20} />} />
         <StatCard label="Total Achieved" value={formatCurrency(totalAchieved, sym)} color="bg-emerald-50 text-emerald-600" icon={<TrendingUp size={20} />} />
         <StatCard label="Overall Achievement" value={`${overallPct.toFixed(1)}%`} color={overallPct >= 100 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} icon={<Percent size={20} />} />
@@ -160,13 +160,13 @@ export default function SalesmanTargetReport() {
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="flex items-center gap-2">
           <label className="text-sm text-slate-500">Month:</label>
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-emerald-500" />
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20">
             <Plus size={18} /> Set Target
           </button>
-          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
             <Printer size={18} /> Print
           </button>
           <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-all">
@@ -200,14 +200,14 @@ export default function SalesmanTargetReport() {
               <tbody className="divide-y divide-slate-100">
                 {rows.map((r) => {
                   const pctVal = pct(r.target, r.achieved);
-                  const barColor = pctVal >= 100 ? 'bg-emerald-500' : pctVal >= 60 ? 'bg-blue-500' : 'bg-rose-500';
+                  const barColor = pctVal >= 100 ? 'bg-emerald-500' : pctVal >= 60 ? 'bg-emerald-500' : 'bg-rose-500';
                   return (
                     <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3 font-medium text-slate-800">{r.salesman}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">{r.routeName}</td>
                       <td className="px-4 py-3 text-right text-sm text-slate-600">{formatCurrency(r.target, sym)}</td>
                       <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(r.achieved, sym)}</td>
-                      <td className={`px-4 py-3 text-right font-bold ${pctVal >= 100 ? 'text-emerald-600' : pctVal >= 60 ? 'text-blue-600' : 'text-rose-600'}`}>{pctVal.toFixed(1)}%</td>
+                      <td className={`px-4 py-3 text-right font-bold ${pctVal >= 100 ? 'text-emerald-600' : pctVal >= 60 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctVal.toFixed(1)}%</td>
                       <td className="px-4 py-3 w-48">
                         <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                           <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, pctVal)}%` }} />
@@ -266,7 +266,7 @@ export default function SalesmanTargetReport() {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={save} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button>
+            <button onClick={save} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button>
             <button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button>
           </div>
         </div>

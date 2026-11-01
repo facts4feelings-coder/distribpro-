@@ -187,7 +187,7 @@ export default function GatePasses() {
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search gate passes..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search gate passes..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm" />
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
@@ -197,7 +197,7 @@ export default function GatePasses() {
           <button onClick={generateDailyPass} disabled={generating} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20">
             <FileStack size={18} /> {generating ? 'Creating...' : 'Daily Gate Pass' }
           </button>
-          <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-600/20">
+          <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20">
             <Plus size={18} /> New Gate Pass
           </button>
         </div>
@@ -224,14 +224,14 @@ export default function GatePasses() {
                 {filtered.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-slate-800">{p.pass_no}</td>
-                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${p.pass_type === 'sales' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{p.pass_type}</span></td>
+                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${p.pass_type === 'sales' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{p.pass_type}</span></td>
                     <td className="px-4 py-3 text-sm text-slate-600">{p.customer_name}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{formatDate(p.pass_date)}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{p.vehicle_no ?? '—'}</td>
                     <td className="px-4 py-3 text-right font-medium text-slate-800">{formatCurrency(p.total_amount, sym)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => openPrint(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Print"><Printer size={16} /></button>
+                        <button onClick={() => openPrint(p)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Print"><Printer size={16} /></button>
                         <button onClick={() => openEdit(p)} className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" title="Edit"><Pencil size={16} /></button>
                         <button onClick={() => remove(p.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 size={16} /></button>
                       </div>
@@ -277,7 +277,7 @@ export default function GatePasses() {
             <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Driver Name</label><input value={form.driver_name} onChange={(e) => setForm({ ...form, driver_name: e.target.value })} className="input" /></div>
           </div>
           <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Notes</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input" /></div>
-          <div className="flex gap-3 pt-2"><button onClick={save} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
+          <div className="flex gap-3 pt-2"><button onClick={save} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
         </div>
       </Modal>
 

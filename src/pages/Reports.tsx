@@ -43,12 +43,12 @@ export default function Reports() {
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-left transition-all ${
                 active
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-blue-300'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-emerald-300'
               }`}
             >
               <span className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                active ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'
+                active ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
               }`}>
                 <Icon size={20} />
               </span>

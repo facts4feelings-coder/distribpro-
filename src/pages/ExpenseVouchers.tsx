@@ -80,7 +80,7 @@ export default function ExpenseVouchers() {
         <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search expenses..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search expenses..." className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm" />
           </div>
           <div className="px-4 py-2.5 bg-rose-50 rounded-lg flex items-center gap-2">
             <span className="text-sm text-rose-700">Today:</span>
@@ -91,7 +91,7 @@ export default function ExpenseVouchers() {
             <span className="font-bold text-amber-700">{formatCurrency(totalMonth, sym)}</span>
           </div>
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-600/20">
+        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20">
           <Plus size={18} /> New Expense Voucher
         </button>
       </div>
@@ -148,7 +148,7 @@ export default function ExpenseVouchers() {
             <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Amount *</label><input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="input" /></div>
             <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Paid To</label><input value={form.paid_to} onChange={(e) => setForm({ ...form, paid_to: e.target.value })} className="input" placeholder="Recipient name" /></div>
           </div>
-          <div className="flex gap-3 pt-2"><button onClick={save} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
+          <div className="flex gap-3 pt-2"><button onClick={save} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setModalOpen(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
         </div>
       </Modal>
     </div>

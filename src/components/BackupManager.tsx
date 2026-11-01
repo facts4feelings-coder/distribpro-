@@ -115,7 +115,7 @@ export default function BackupManager() {
         {/* Download backup */}
         <div className="border border-slate-200 rounded-xl p-5 flex flex-col">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center"><Download size={20} className="text-blue-600" /></div>
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center"><Download size={20} className="text-emerald-600" /></div>
             <h4 className="font-bold text-slate-800">Download Backup</h4>
           </div>
           <p className="text-sm text-slate-500 mb-4">
@@ -124,7 +124,7 @@ export default function BackupManager() {
           <button
             onClick={runBackup}
             disabled={busy !== null}
-            className="mt-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+            className="mt-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
           >
             {busy === 'backup' ? <><Loader2 size={16} className="animate-spin" /> Preparing...</> : <><Download size={16} /> Download Full Backup</>}
           </button>
@@ -139,7 +139,7 @@ export default function BackupManager() {
           <p className="text-sm text-slate-500 mb-4">
             Bring data back from a backup file. Records are merged in — nothing is deleted, matching records are updated.
           </p>
-          <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-lg text-sm font-medium text-slate-600 transition-all">
+          <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-slate-300 hover:border-emerald-400 rounded-lg text-sm font-medium text-slate-600 transition-all">
             {restoreFile ? <FileJson size={16} className="text-amber-600" /> : <Upload size={16} />}
             {restoreFile ? restoreFile.name : 'Choose backup file (.json)'}
             <input type="file" accept=".json,application/json" className="hidden" onChange={(e) => pickRestoreFile(e.target.files?.[0])} />
@@ -191,7 +191,7 @@ export default function BackupManager() {
                     {h.kind === 'restore' ? (
                       <Upload size={15} className="text-amber-500" />
                     ) : (
-                      <Download size={15} className="text-blue-500" />
+                      <Download size={15} className="text-emerald-500" />
                     )}
                     <div>
                       <p className="font-medium text-slate-700">

@@ -124,7 +124,7 @@ export default function Salaries() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center"><Users size={20} className="text-blue-600" /></div><span className="text-sm text-slate-500">Active Employees</span></div>
+          <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center"><Users size={20} className="text-emerald-600" /></div><span className="text-sm text-slate-500">Active Employees</span></div>
           <p className="text-2xl font-bold text-slate-800">{employees.filter((e) => e.is_active).length}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -141,12 +141,12 @@ export default function Salaries() {
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tab === 'employees' ? 'Search employees...' : 'Search payments...'} className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tab === 'employees' ? 'Search employees...' : 'Search payments...'} className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm" />
         </div>
         {tab === 'employees' ? (
-          <button onClick={openNewEmp} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-600/20"><Plus size={18} /> Add Employee</button>
+          <button onClick={openNewEmp} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20"><Plus size={18} /> Add Employee</button>
         ) : (
-          <button onClick={openNewPay} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-600/20"><Plus size={18} /> Record Payment</button>
+          <button onClick={openNewPay} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-600/20"><Plus size={18} /> Record Payment</button>
         )}
       </div>
 
@@ -233,7 +233,7 @@ export default function Salaries() {
             <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Monthly Salary *</label><input type="number" step="0.01" value={empForm.salary} onChange={(e) => setEmpForm({ ...empForm, salary: e.target.value })} className="input" /></div>
             <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Hire Date</label><input type="date" value={empForm.hire_date} onChange={(e) => setEmpForm({ ...empForm, hire_date: e.target.value })} className="input" /></div>
           </div>
-          <div className="flex gap-3 pt-2"><button onClick={saveEmp} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setEmpModal(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
+          <div className="flex gap-3 pt-2"><button onClick={saveEmp} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setEmpModal(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
         </div>
       </Modal>
 
@@ -250,7 +250,7 @@ export default function Salaries() {
             <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Payment Method</label><select value={payForm.payment_method} onChange={(e) => setPayForm({ ...payForm, payment_method: e.target.value })} className="input"><option value="cash">Cash</option><option value="bank">Bank Transfer</option><option value="cheque">Cheque</option></select></div>
           </div>
           <div><label className="text-sm font-medium text-slate-700 mb-1.5 block">Notes</label><input value={payForm.notes} onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })} className="input" /></div>
-          <div className="flex gap-3 pt-2"><button onClick={savePay} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setPayModal(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
+          <div className="flex gap-3 pt-2"><button onClick={savePay} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-all">Save</button><button onClick={() => setPayModal(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-lg font-medium transition-all">Cancel</button></div>
         </div>
       </Modal>
     </div>

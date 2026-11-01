@@ -172,9 +172,9 @@ export default function FullProfitLossReport() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-slate-400" />
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-emerald-500" />
           <span className="text-slate-400 text-sm">to</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-emerald-500" />
         </div>
         <div className="p-8 text-center text-slate-400">Loading report...</div>
       </div>
@@ -185,7 +185,7 @@ export default function FullProfitLossReport() {
     <div className="space-y-4" id="pl-report-print">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <PLCard label="Net Sales Revenue" value={formatCurrency(data.netSalesRevenue, sym)} color="bg-blue-50 text-blue-600" icon={<TrendingUp size={20} />} />
+        <PLCard label="Net Sales Revenue" value={formatCurrency(data.netSalesRevenue, sym)} color="bg-emerald-50 text-emerald-600" icon={<TrendingUp size={20} />} />
         <PLCard label="Gross Profit" value={formatCurrency(data.grossProfit, sym)} color={data.grossProfit >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} icon={<DollarSign size={20} />} />
         <PLCard label="Total Expenses" value={formatCurrency(data.totalOperatingExpenses, sym)} color="bg-amber-50 text-amber-600" icon={<TrendingDown size={20} />} />
         <PLCard label="Net Profit" value={formatCurrency(data.netProfit, sym)} color={data.netProfit >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} icon={<DollarSign size={20} />} />
@@ -195,12 +195,12 @@ export default function FullProfitLossReport() {
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-slate-400" />
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-emerald-500" />
           <span className="text-slate-400 text-sm">to</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-emerald-500" />
         </div>
         <div className="flex gap-2">
-          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all">
             <Printer size={18} /> Print
           </button>
           <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-all">
