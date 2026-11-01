@@ -12,23 +12,31 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "electron:dev": "OFFLINE=1 vite build && electron electron/main.cjs",
     "electron:build": "OFFLINE=1 vite build && electron-builder --win --x64",
-    "dist": "OFFLINE=1 vite build && electron-builder --win nsis --x64"
+    "dist": "OFFLINE=1 vite build && electron-builder --win nsis --x64",
+    "build:electron": "esbuild electron/main.ts --bundle --platform=node --format=cjs --external:electron --external:better-sqlite3 --outfile=electron-dist/main.cjs && esbuild electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=electron-dist/preload.cjs",
+    "test": "vitest run",
+    "typecheck:electron": "tsc --noEmit -p tsconfig.electron.json"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",
     "@supabase/supabase-js": "^2.57.4",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.4",
     "lucide-react": "^0.446.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
+    "drizzle-kit": "^0.31.11",
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3",
+    "esbuild": "^0.28.2",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
@@ -36,9 +44,11 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "terser": "^5.51.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
-    "vite": "^5.4.2"
+    "vite": "^5.4.2",
+    "vitest": "^2.1.9"
   },
   "build": {
     "appId": "com.distribpro.app",

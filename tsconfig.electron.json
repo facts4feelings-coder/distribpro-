@@ -1,0 +1,1 @@
+{"compilerOptions":{"declaration":false,"esModuleInterop":true,"forceConsistentCasingInFileNames":true,"lib":["ES2022"],"module":"CommonJS","moduleResolution":"node","outDir":"electron-dist-types","resolveJsonModule":true,"skipLibCheck":true,"sourceMap":false,"strict":true,"target":"ES2022","types":["node"]},"include":["electron/**/*.ts","drizzle.config.ts"]}
