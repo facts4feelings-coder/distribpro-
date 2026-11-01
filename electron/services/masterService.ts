@@ -51,9 +51,9 @@ export async function listCustomers(db: Db): Promise<PartyDto[]> {
   const rows = await db.select().from(customers).orderBy(asc(customers.name));
   return rows.map(partyToDto);
 }
-export async function createCustomer(db: Db, input: PartyInput): Promise<{ error?: string }> {
-  await db.insert(customers).values(partyValues(input));
-  return {};
+export async function createCustomer(db: Db, input: PartyInput): Promise<{ error?: string; id?: string }> {
+  const [row] = await db.insert(customers).values(partyValues(input)).returning();
+  return { id: row?.id };
 }
 export async function bulkCreateCustomers(db: Db, inputs: PartyInput[]): Promise<{ error?: string; count: number }> {
   try {
@@ -74,6 +74,11 @@ export async function deleteCustomer(db: Db, id: string): Promise<{ error?: stri
   } catch {
     return { error: 'This customer has invoices or payments and cannot be deleted.' };
   }
+}
+
+export async function getCustomer(db: Db, id: string): Promise<PartyDto | null> {
+  const [row] = await db.select().from(customers).where(eq(customers.id, id));
+  return row ? partyToDto(row) : null;
 }
 
 export async function listSuppliers(db: Db): Promise<PartyDto[]> {
@@ -144,13 +149,18 @@ const productValues = (i: ProductInput) => ({
   stockQuantity: toMilliQty(i.stockQuantity), reorderLevel: toMilliQty(i.reorderLevel),
 });
 
+export async function getProduct(db: Db, id: string): Promise<ProductDto | null> {
+  const [row] = await db.select().from(products).where(eq(products.id, id));
+  return row ? productToDto(row) : null;
+}
+
 export async function listProducts(db: Db): Promise<ProductDto[]> {
   const rows = await db.select().from(products).orderBy(asc(products.name));
   return rows.map(productToDto);
 }
-export async function createProduct(db: Db, input: ProductInput): Promise<{ error?: string }> {
-  await db.insert(products).values(productValues(input));
-  return {};
+export async function createProduct(db: Db, input: ProductInput): Promise<{ error?: string; id?: string }> {
+  const [row] = await db.insert(products).values(productValues(input)).returning();
+  return { id: row?.id };
 }
 export async function bulkCreateProducts(db: Db, inputs: ProductInput[]): Promise<{ error?: string; count: number }> {
   try {

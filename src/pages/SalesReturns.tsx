@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Printer, Eye, Calendar, CheckSquare, Square } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, productDtoToLegacy, invoiceDtoToCustomerLegacy, invoiceItemDtoToLegacy, invoiceInputFromLegacy, invoiceItemsInputFromLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { Customer, Product, CustomerInvoice, CustomerInvoiceItem, InvoiceWithCustomer } from '@/lib/types';
@@ -9,7 +9,6 @@ import PrintDocument from '@/components/PrintDocument';
 import { PrintModal, PrintFormatSelector, normalizeFormat } from '@/components/PrintModal';
 import type { PrintFormat } from '@/components/PrintModal';
 import InvoiceLineItems from '@/components/InvoiceLineItems';
-import { recalcCustomerBalance } from '@/lib/customerBalance';
 
 interface PrintEntry {
   invoice: CustomerInvoice;
@@ -42,18 +41,14 @@ export default function SalesReturns() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('customer_invoices')
-      .select('*, customers(*)')
-      .eq('invoice_type', 'sales-return')
-      .order('created_at', { ascending: false });
-    setInvoices((data ?? []) as InvoiceWithCustomer[]);
+    const data = await api.invoices.list('customer', 'sales-return').catch(() => []);
+    setInvoices(data.map(invoiceDtoToCustomerLegacy));
     const [c, p] = await Promise.all([
-      supabase.from('customers').select('*').order('name'),
-      supabase.from('products').select('*').order('name'),
+      api.customers.list().catch(() => []),
+      api.products.list().catch(() => []),
     ]);
-    setCustomers((c.data ?? []) as Customer[]);
-    setProducts((p.data ?? []) as Product[]);
+    setCustomers(c.map(partyDtoToLegacy));
+    setProducts(p.map(productDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -78,14 +73,14 @@ export default function SalesReturns() {
 
   const openEdit = async (inv: CustomerInvoice) => {
     setEditing(inv);
-    const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('customer', inv.id).catch(() => [])).map(invoiceItemDtoToLegacy);
     setForm({
       invoice_no: inv.invoice_no, customer_id: inv.customer_id,
       invoice_date: formatDateInput(inv.invoice_date),
       discount: String(inv.discount), tax: String(inv.tax),
       paid_amount: String(inv.paid_amount), notes: inv.notes ?? '',
     });
-    setItems((invItems ?? []).map((i: CustomerInvoiceItem) => ({
+    setItems(invItems.map((i) => ({
       product_id: i.product_id ?? '', product_name: i.product_name,
       quantity: String(i.quantity), unit_price: String(i.unit_price),
       discount_percent: String(i.discount_percent ?? 0), total: String(i.total),
@@ -135,9 +130,6 @@ export default function SalesReturns() {
   const totals = computeTotals();
 
   const save = async () => {
-    const affectedCustomerIds = new Set<string>();
-    if (form.customer_id) affectedCustomerIds.add(form.customer_id);
-    if (editing && editing.customer_id) affectedCustomerIds.add(editing.customer_id);
     const payload = {
       invoice_no: form.invoice_no, customer_id: form.customer_id,
       invoice_date: form.invoice_date, due_date: null,
@@ -147,53 +139,41 @@ export default function SalesReturns() {
       invoice_type: 'sales-return',
     };
 
+    const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
+      product_id: i.product_id || null, product_name: i.product_name,
+      quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0,
+      discount_percent: parseFloat(i.discount_percent) || 0, total: parseFloat(i.total) || 0,
+    }));
+    const input = invoiceInputFromLegacy(payload, form.customer_id);
+    const itemInputs = invoiceItemsInputFromLegacy(itemsPayload);
     if (editing) {
-      await supabase.from('customer_invoices').update(payload).eq('id', editing.id);
-      await supabase.from('customer_invoice_items').delete().eq('invoice_id', editing.id);
-      const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
-        invoice_id: editing.id, product_id: i.product_id || null, product_name: i.product_name,
-        quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0,
-        discount_percent: parseFloat(i.discount_percent) || 0, total: parseFloat(i.total) || 0,
-      }));
-      if (itemsPayload.length > 0) await supabase.from('customer_invoice_items').insert(itemsPayload);
+      await api.invoices.update('customer', editing.id, input, itemInputs);
     } else {
-      const { data: newInv } = await supabase.from('customer_invoices').insert(payload).select().single();
-      if (newInv) {
-        const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
-          invoice_id: (newInv as CustomerInvoice).id, product_id: i.product_id || null, product_name: i.product_name,
-          quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0,
-          discount_percent: parseFloat(i.discount_percent) || 0, total: parseFloat(i.total) || 0,
-        }));
-        if (itemsPayload.length > 0) await supabase.from('customer_invoice_items').insert(itemsPayload);
-      }
+      await api.invoices.create('customer', input, itemInputs);
     }
-    for (const cid of affectedCustomerIds) await recalcCustomerBalance(cid);
     setModalOpen(false);
     load();
   };
 
   const remove = async (id: string) => {
     if (!confirm('Delete this sales return? This cannot be undone.')) return;
-    const inv = invoices.find((i) => i.id === id);
-    await supabase.from('customer_invoice_items').delete().eq('invoice_id', id);
-    await supabase.from('customer_invoices').delete().eq('id', id);
-    if (inv?.customer_id) await recalcCustomerBalance(inv.customer_id);
+    await api.invoices.delete('customer', id);
     load();
   };
 
   const openPrint = async (inv: CustomerInvoice) => {
-    const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('customer', inv.id).catch(() => [])).map(invoiceItemDtoToLegacy);
     const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
-    setPrintEntries([{ invoice: inv, items: (invItems ?? []) as CustomerInvoiceItem[], customer: cust }]);
+    setPrintEntries([{ invoice: inv, items: invItems, customer: cust }]);
     setPrintFormat(normalizeFormat(settings?.default_print_format));
     setPrintOpen(true);
   };
 
   const openView = async (inv: CustomerInvoice) => {
-    const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('customer', inv.id).catch(() => [])).map(invoiceItemDtoToLegacy);
     const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
     setViewInvoice(inv);
-    setViewItems((invItems ?? []) as CustomerInvoiceItem[]);
+    setViewItems(invItems);
     setViewCustomer(cust);
   };
 
@@ -211,7 +191,7 @@ export default function SalesReturns() {
     for (const id of selectedIds) {
       const inv = invoices.find((i) => i.id === id);
       if (!inv) continue;
-      const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', id);
+      const invItems = (await api.invoices.items('customer', id).catch(() => [])).map(invoiceItemDtoToLegacy);
       const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
       entries.push({ invoice: inv, items: (invItems ?? []) as CustomerInvoiceItem[], customer: cust });
     }

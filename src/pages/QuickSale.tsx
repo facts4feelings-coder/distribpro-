@@ -1,13 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { ShoppingCart, CheckCircle, Printer, Calendar } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, productDtoToLegacy, invoiceDtoToCustomerLegacy, invoiceItemDtoToLegacy, invoiceInputFromLegacy, invoiceItemsInputFromLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, todayISO } from '@/lib/utils';
 import type { Customer, Product, CustomerInvoice, CustomerInvoiceItem } from '@/lib/types';
 import InvoiceLineItems from '@/components/InvoiceLineItems';
 import { QuickAddCustomer, QuickAddProduct } from '@/components/QuickAdd';
 import CustomerBalanceBadge from '@/components/CustomerBalanceBadge';
-import { recalcCustomerBalance } from '@/lib/customerBalance';
 import type { GatePass } from '@/lib/types';
 import PrintDocument from '@/components/PrintDocument';
 import { PrintModal, PrintFormatSelector, normalizeFormat } from '@/components/PrintModal';
@@ -45,32 +44,24 @@ export default function QuickSale() {
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('customer_invoice_items')
-        .select('product_id, unit_price, customer_invoices!inner(customer_id)')
-        .eq('customer_invoices.customer_id', form.customer_id)
-        .order('created_at', { ascending: false });
+      const rates = await api.invoices.customerRates(form.customer_id).catch(() => ({} as Record<string, number>));
       if (cancelled) return;
-      const rates: Record<string, number> = {};
-      for (const row of (data ?? []) as { product_id: string | null; unit_price: number }[]) {
-        if (row.product_id && !(row.product_id in rates)) rates[row.product_id] = row.unit_price;
-      }
       setCustomerRates(rates);
     })();
     return () => { cancelled = true; };
   }, [form.customer_id]);
 
   const load = useCallback(async () => {
-    const [c, p, invRes] = await Promise.all([
-      supabase.from('customers').select('*').order('name'),
-      supabase.from('products').select('*').order('name'),
-      supabase.from('customer_invoices').select('invoice_no', { count: 'exact' }).eq('invoice_type', 'sale'),
+    const [c, p, invCount] = await Promise.all([
+      api.customers.list().catch(() => []),
+      api.products.list().catch(() => []),
+      api.invoices.count('customer', 'sale').catch(() => 0),
     ]);
-    setCustomers((c.data ?? []) as Customer[]);
-    setProducts((p.data ?? []) as Product[]);
+    setCustomers(c.map(partyDtoToLegacy));
+    setProducts(p.map(productDtoToLegacy));
 
     const prefix = settings?.invoice_prefix ?? 'INV-';
-    const count = (invRes.count ?? 0) + 1;
+    const count = invCount + 1;
     setForm((f) => ({ ...f, invoice_no: `${prefix}${String(count).padStart(4, '0')}` }));
   }, [settings?.invoice_prefix]);
 
@@ -149,28 +140,11 @@ export default function QuickSale() {
 
   const resetForm = () => {
     const prefix = settings?.invoice_prefix ?? 'INV-';
-    supabase.from('customer_invoices').select('invoice_no', { count: 'exact' }).eq('invoice_type', 'sale').then(({ count }) => {
-      const nextCount = (count ?? 0) + 1;
+    api.invoices.count('customer', 'sale').catch(() => 0).then((count) => {
+      const nextCount = count + 1;
       setForm({ invoice_no: `${prefix}${String(nextCount).padStart(4, '0')}`, customer_id: '', invoice_date: todayISO(), discount: '0', tax: '0', paid_amount: '0', payment_type: 'cash', notes: '' });
       setItems([{ product_id: '', product_name: '', quantity: '1', unit_price: '0', discount_percent: '0', total: '0' }]);
     });
-  };
-
-  const createGatePassForSale = async (inv: CustomerInvoice, cust: Customer | null) => {
-    const desc = items.filter((i) => i.product_name).map((i) => `${i.product_name} x ${i.quantity}`).join(', ');
-    const { data: existing } = await supabase.from('gate_passes').select('id', { count: 'exact', head: true });
-    const prefix = settings?.gate_pass_prefix ?? 'GP-';
-    const payload: Partial<GatePass> = {
-      pass_no: `${prefix}${String((existing?.length ?? 0) + 1).padStart(4, '0')}`,
-      pass_type: 'sales',
-      customer_id: inv.customer_id,
-      customer_name: cust?.name ?? '',
-      pass_date: inv.invoice_date,
-      reference_invoice: inv.invoice_no,
-      items_description: desc || null,
-      total_amount: inv.total,
-    };
-    await supabase.from('gate_passes').insert(payload);
   };
 
   const save = async () => {
@@ -214,29 +188,28 @@ export default function QuickSale() {
       invoice_type: 'sale',
     };
 
-    const { data: newInv } = await supabase.from('customer_invoices').insert(payload).select().single();
-    if (newInv) {
-      const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
-        invoice_id: (newInv as CustomerInvoice).id,
-        product_id: i.product_id || null,
-        product_name: i.product_name,
-        quantity: parseFloat(i.quantity) || 0,
-        unit_price: parseFloat(i.unit_price) || 0,
-        discount_percent: parseFloat(i.discount_percent) || 0,
-        total: parseFloat(i.total) || 0,
-      }));
-      if (itemsPayload.length > 0) {
-        await supabase.from('customer_invoice_items').insert(itemsPayload);
-      }
-      const inv = newInv as CustomerInvoice;
-      const { data: freshItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
+    const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
+      product_id: i.product_id || null,
+      product_name: i.product_name,
+      quantity: parseFloat(i.quantity) || 0,
+      unit_price: parseFloat(i.unit_price) || 0,
+      discount_percent: parseFloat(i.discount_percent) || 0,
+      total: parseFloat(i.total) || 0,
+    }));
+    const res = await api.invoices.create(
+      'customer',
+      invoiceInputFromLegacy(payload, form.customer_id),
+      invoiceItemsInputFromLegacy(itemsPayload),
+      { withGatePass: true },
+    );
+    if (res.invoice) {
+      const inv = invoiceDtoToCustomerLegacy(res.invoice);
+      const freshItems = (await api.invoices.items('customer', inv.id).catch(() => [])).map(invoiceItemDtoToLegacy);
       const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
-      await createGatePassForSale(inv, cust);
       setSavedInvoice(inv);
-      setSavedItems((freshItems ?? []) as CustomerInvoiceItem[]);
+      setSavedItems(freshItems);
       setSavedCustomer(cust);
     }
-    if (form.customer_id) await recalcCustomerBalance(form.customer_id);
     setSaving(false);
   };
 

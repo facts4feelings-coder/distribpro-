@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, BookOpen, Printer } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { api, supplierDtoToLegacy, partyInputFromLegacy } from '@/lib/api';
+import { api, supplierDtoToLegacy, partyInputFromLegacy, invoiceDtoToSupplierLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, escapeHtml } from '@/lib/utils';
 import { printHtml } from '@/lib/reportPrint';
@@ -180,16 +179,15 @@ function SupplierLedgerModal({ supplier, onClose, sym }: { supplier: Supplier; o
 
   useEffect(() => {
     (async () => {
-      // TODO(Phase 4): ledger reads supplier invoices — migrates with the
-      // transaction services; still on the local shim until then.
-      const { data: invoices } = await supabase.from('supplier_invoices').select('*').eq('supplier_id', supplier.id).order('invoice_date');
+      const invDtos = await api.invoices.listForParty('supplier', supplier.id).catch(() => []);
+      const invoices = invDtos.map(invoiceDtoToSupplierLegacy);
 
       type RawEntry = { date: string; description: string; debit: number; credit: number };
       const raw: RawEntry[] = [];
 
       raw.push({ date: supplier.created_at, description: 'Opening Balance', debit: 0, credit: supplier.opening_balance });
 
-      ((invoices ?? []) as SupplierInvoice[]).forEach((inv) => {
+      invoices.forEach((inv) => {
         raw.push({ date: inv.invoice_date, description: `Invoice ${inv.invoice_no}`, debit: inv.paid_amount, credit: inv.total });
       });
 

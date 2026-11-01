@@ -9,6 +9,8 @@
 import type {
   Settings, Customer, Supplier, Product, Route, CustomerRoute,
   Employee, SalaryPaymentWithEmployee, IncomeOption,
+  CustomerInvoice, SupplierInvoice, CustomerInvoiceItem, SupplierInvoiceItem,
+  PaymentVoucher, ExpenseVoucher, GatePass,
 } from './types';
 
 export interface SettingsDto {
@@ -215,6 +217,144 @@ export function incomeDtoToLegacy(d: IncomeDto): IncomeOption {
   };
 }
 
+// ---------------------------------------------------------------- Phase 4
+// Transaction DTOs (mirror electron/services/transactionService.ts).
+export type PartyKind = 'customer' | 'supplier';
+
+export interface InvoiceItemDto {
+  id: string; invoiceId: string; productId: string | null; productName: string;
+  quantity: number; unitPrice: number; discountPercent: number; total: number; createdAt: string | null;
+}
+export interface InvoiceItemInput {
+  productId: string | null; productName: string; quantity: number;
+  unitPrice: number; discountPercent: number; total: number;
+}
+export interface InvoiceDto {
+  id: string; invoiceNo: string; partyId: string; invoiceDate: string; dueDate: string | null;
+  subtotal: number; discount: number; tax: number; total: number; paidAmount: number;
+  balance: number; status: string; paymentType: string | null; notes: string | null;
+  invoiceType: string; createdAt: string | null; party: PartyDto | null;
+}
+export interface InvoiceInput {
+  invoiceNo: string; partyId: string; invoiceDate: string; dueDate: string | null;
+  subtotal: number; discount: number; tax: number; total: number; paidAmount: number;
+  balance: number; status: string; paymentType?: string | null; notes: string | null; invoiceType: string;
+}
+
+export function invoiceDtoToCustomerLegacy(d: InvoiceDto): CustomerInvoice & { customers?: Customer } {
+  return {
+    id: d.id, invoice_no: d.invoiceNo, customer_id: d.partyId, invoice_date: d.invoiceDate,
+    due_date: d.dueDate, subtotal: d.subtotal, discount: d.discount, tax: d.tax, total: d.total,
+    paid_amount: d.paidAmount, balance: d.balance, status: d.status,
+    payment_type: d.paymentType ?? undefined, notes: d.notes, invoice_type: d.invoiceType,
+    created_at: d.createdAt ?? '', customers: d.party ? partyDtoToLegacy(d.party) : undefined,
+  };
+}
+export function invoiceDtoToSupplierLegacy(d: InvoiceDto): SupplierInvoice & { suppliers?: Supplier } {
+  return {
+    id: d.id, invoice_no: d.invoiceNo, supplier_id: d.partyId, invoice_date: d.invoiceDate,
+    due_date: d.dueDate, subtotal: d.subtotal, discount: d.discount, tax: d.tax, total: d.total,
+    paid_amount: d.paidAmount, balance: d.balance, status: d.status,
+    notes: d.notes, invoice_type: d.invoiceType, created_at: d.createdAt ?? '',
+    suppliers: d.party ? supplierDtoToLegacy(d.party) : undefined,
+  };
+}
+export function invoiceItemDtoToLegacy(d: InvoiceItemDto): CustomerInvoiceItem {
+  return {
+    id: d.id, invoice_id: d.invoiceId, product_id: d.productId, product_name: d.productName,
+    quantity: d.quantity, unit_price: d.unitPrice, discount_percent: d.discountPercent,
+    total: d.total, created_at: d.createdAt ?? '',
+  };
+}
+export const supplierItemDtoToLegacy = (d: InvoiceItemDto): SupplierInvoiceItem => invoiceItemDtoToLegacy(d);
+
+export function invoiceInputFromLegacy(p: {
+  invoice_no: string; invoice_date: string; due_date: string | null;
+  subtotal: number; discount: number; tax: number; total: number;
+  paid_amount: number; balance: number; status: string;
+  payment_type?: string | null; notes: string | null; invoice_type: string;
+}, partyId: string): InvoiceInput {
+  return {
+    invoiceNo: p.invoice_no, partyId, invoiceDate: p.invoice_date, dueDate: p.due_date,
+    subtotal: p.subtotal, discount: p.discount, tax: p.tax, total: p.total,
+    paidAmount: p.paid_amount, balance: p.balance, status: p.status,
+    paymentType: p.payment_type ?? null, notes: p.notes, invoiceType: p.invoice_type,
+  };
+}
+export function invoiceItemsInputFromLegacy(items: {
+  product_id: string | null; product_name: string; quantity: number;
+  unit_price: number; discount_percent: number; total: number;
+}[]): InvoiceItemInput[] {
+  return items.map((i) => ({
+    productId: i.product_id, productName: i.product_name, quantity: i.quantity,
+    unitPrice: i.unit_price, discountPercent: i.discount_percent, total: i.total,
+  }));
+}
+
+export interface PaymentVoucherDto {
+  id: string; voucherNo: string; customerId: string | null; supplierId: string | null;
+  voucherDate: string; amount: number; paymentMethod: string; reference: string | null;
+  notes: string | null; createdAt: string | null; customer: PartyDto | null; supplier: PartyDto | null;
+}
+export interface PaymentVoucherInput {
+  voucherNo: string; customerId: string | null; supplierId: string | null;
+  voucherDate: string; amount: number; paymentMethod: string; reference: string | null; notes: string | null;
+}
+export function paymentVoucherDtoToLegacy(
+  d: PaymentVoucherDto,
+): PaymentVoucher & { customers?: Customer; suppliers?: Supplier } {
+  return {
+    id: d.id, voucher_no: d.voucherNo, customer_id: d.customerId, supplier_id: d.supplierId,
+    voucher_date: d.voucherDate, amount: d.amount, payment_method: d.paymentMethod,
+    reference: d.reference, notes: d.notes, created_at: d.createdAt ?? '',
+    customers: d.customer ? partyDtoToLegacy(d.customer) : undefined,
+    suppliers: d.supplier ? supplierDtoToLegacy(d.supplier) : undefined,
+  };
+}
+
+export interface ExpenseVoucherDto {
+  id: string; voucherNo: string; expenseDate: string; category: string;
+  description: string | null; amount: number; paidTo: string | null; createdAt: string | null;
+}
+export interface ExpenseVoucherInput {
+  voucherNo: string; expenseDate: string; category: string;
+  description: string | null; amount: number; paidTo: string | null;
+}
+export function expenseVoucherDtoToLegacy(d: ExpenseVoucherDto): ExpenseVoucher {
+  return {
+    id: d.id, voucher_no: d.voucherNo, expense_date: d.expenseDate, category: d.category,
+    description: d.description, amount: d.amount, paid_to: d.paidTo, created_at: d.createdAt ?? '',
+  };
+}
+
+export interface GatePassDto {
+  id: string; passNo: string; passType: string; customerId: string | null; customerName: string;
+  passDate: string; referenceInvoice: string | null; itemsDescription: string | null;
+  totalAmount: number; vehicleNo: string | null; driverName: string | null;
+  notes: string | null; createdAt: string | null;
+}
+export type GatePassInput = Omit<GatePassDto, 'id' | 'createdAt'>;
+export function gatePassDtoToLegacy(d: GatePassDto): GatePass {
+  return {
+    id: d.id, pass_no: d.passNo, pass_type: d.passType, customer_id: d.customerId,
+    customer_name: d.customerName, pass_date: d.passDate, reference_invoice: d.referenceInvoice,
+    items_description: d.itemsDescription, total_amount: d.totalAmount,
+    vehicle_no: d.vehicleNo, driver_name: d.driverName, notes: d.notes, created_at: d.createdAt ?? '',
+  };
+}
+export function gatePassInputFromLegacy(p: {
+  pass_no: string; pass_type: string; customer_id: string | null; customer_name: string;
+  pass_date: string; reference_invoice: string | null; items_description: string | null;
+  total_amount: number; vehicle_no?: string | null; driver_name?: string | null; notes?: string | null;
+}): GatePassInput {
+  return {
+    passNo: p.pass_no, passType: p.pass_type, customerId: p.customer_id, customerName: p.customer_name,
+    passDate: p.pass_date, referenceInvoice: p.reference_invoice, itemsDescription: p.items_description,
+    totalAmount: p.total_amount, vehicleNo: p.vehicle_no ?? null, driverName: p.driver_name ?? null,
+    notes: p.notes ?? null,
+  };
+}
+
 export interface UpdateUserOpts {
   userId: string;
   username: string;
@@ -287,11 +427,45 @@ interface DistribProApi {
     update(id: string, input: IncomeInput): Promise<{ error?: string }>;
     delete(id: string): Promise<{ error?: string }>;
   };
+  invoices: {
+    list(kind: PartyKind, type: string): Promise<InvoiceDto[]>;
+    listForParty(kind: PartyKind, partyId: string): Promise<InvoiceDto[]>;
+    get(kind: PartyKind, id: string): Promise<InvoiceDto | null>;
+    items(kind: PartyKind, invoiceId: string): Promise<InvoiceItemDto[]>;
+    count(kind: PartyKind, type: string): Promise<number>;
+    create(kind: PartyKind, input: InvoiceInput, items: InvoiceItemInput[], opts?: { withGatePass?: boolean }): Promise<{ error?: string; invoice?: InvoiceDto }>;
+    update(kind: PartyKind, id: string, input: InvoiceInput, items: InvoiceItemInput[]): Promise<{ error?: string }>;
+    delete(kind: PartyKind, id: string): Promise<{ error?: string }>;
+    customerRates(customerId: string): Promise<Record<string, number>>;
+    listByDate(kind: PartyKind, date: string): Promise<InvoiceDto[]>;
+  };
+  paymentVouchers: {
+    list(): Promise<PaymentVoucherDto[]>;
+    listForParty(kind: PartyKind, partyId: string): Promise<PaymentVoucherDto[]>;
+    create(input: PaymentVoucherInput): Promise<{ error?: string }>;
+    update(id: string, input: PaymentVoucherInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
+  expenseVouchers: {
+    list(): Promise<ExpenseVoucherDto[]>;
+    create(input: ExpenseVoucherInput): Promise<{ error?: string }>;
+    update(id: string, input: ExpenseVoucherInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
+  gatePasses: {
+    list(): Promise<GatePassDto[]>;
+    find(passDate: string, notes: string): Promise<GatePassDto | null>;
+    count(): Promise<number>;
+    create(input: GatePassInput): Promise<{ error?: string }>;
+    update(id: string, input: GatePassInput): Promise<{ error?: string }>;
+    delete(id: string): Promise<{ error?: string }>;
+  };
 }
 
 interface CrudApi<Dto, Input> {
   list(): Promise<Dto[]>;
-  create(input: Input): Promise<{ error?: string }>;
+  get(id: string): Promise<Dto | null>;
+  create(input: Input): Promise<{ error?: string; id?: string }>;
   bulkCreate(inputs: Input[]): Promise<{ error?: string; count: number }>;
   update(id: string, input: Input): Promise<{ error?: string }>;
   delete(id: string): Promise<{ error?: string }>;
@@ -349,5 +523,17 @@ export const api: DistribProApi = {
   },
   get income() {
     return bridge().income;
+  },
+  get invoices() {
+    return bridge().invoices;
+  },
+  get paymentVouchers() {
+    return bridge().paymentVouchers;
+  },
+  get expenseVouchers() {
+    return bridge().expenseVouchers;
+  },
+  get gatePasses() {
+    return bridge().gatePasses;
   },
 };

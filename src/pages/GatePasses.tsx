@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Printer, Calendar, FileStack } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, gatePassDtoToLegacy, gatePassInputFromLegacy, invoiceDtoToCustomerLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { Customer, GatePass, CustomerInvoice } from '@/lib/types';
@@ -31,10 +31,10 @@ export default function GatePasses() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('gate_passes').select('*').order('created_at', { ascending: false });
-    setPasses((data ?? []) as GatePass[]);
-    const { data: custs } = await supabase.from('customers').select('*').order('name');
-    setCustomers((custs ?? []) as Customer[]);
+    const data = await api.gatePasses.list().catch(() => []);
+    setPasses(data.map(gatePassDtoToLegacy));
+    const custs = await api.customers.list().catch(() => []);
+    setCustomers(custs.map(partyDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -85,9 +85,9 @@ export default function GatePasses() {
       notes: form.notes || null,
     };
     if (editing) {
-      await supabase.from('gate_passes').update(payload).eq('id', editing.id);
+      await api.gatePasses.update(editing.id, gatePassInputFromLegacy(payload));
     } else {
-      await supabase.from('gate_passes').insert(payload);
+      await api.gatePasses.create(gatePassInputFromLegacy(payload));
     }
     setModalOpen(false);
     load();
@@ -95,7 +95,7 @@ export default function GatePasses() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this gate pass?')) return;
-    await supabase.from('gate_passes').delete().eq('id', id);
+    await api.gatePasses.delete(id);
     load();
   };
 
@@ -103,28 +103,21 @@ export default function GatePasses() {
 
   const generateDailyPass = async () => {
     setGenerating(true);
-    const { data: invs } = await supabase
-      .from('customer_invoices')
-      .select('id, invoice_no, total, customers(name)')
-      .eq('invoice_date', dailyDate)
-      .order('invoice_no');
-    const invoices = (invs ?? []) as unknown as (CustomerInvoice & { customers?: { name: string } | null })[];
+    const invDtos = await api.invoices.listByDate('customer', dailyDate).catch(() => []);
+    const invoices = invDtos.map(invoiceDtoToCustomerLegacy);
     if (invoices.length === 0) {
       alert(`No bills found for ${formatDate(dailyDate)}.`);
       setGenerating(false);
       return;
     }
-    const { data: itemRows } = await supabase
-      .from('customer_invoice_items')
-      .select('product_name, quantity, unit_price, total, invoice_id')
-      .in('invoice_id', invoices.map((i) => i.id));
-    const items = (itemRows ?? []) as { product_name: string; quantity: number; unit_price: number; total: number; invoice_id: string }[];
-    const { data: existing } = await supabase
-      .from('gate_passes')
-      .select('id')
-      .eq('pass_date', dailyDate)
-      .eq('notes', DAILY_MARKER)
-      .maybeSingle();
+    const items: { product_name: string; quantity: number; unit_price: number; total: number; invoice_id: string }[] = [];
+    for (const inv of invoices) {
+      const rows = await api.invoices.items('customer', inv.id).catch(() => []);
+      for (const r of rows) {
+        items.push({ product_name: r.productName, quantity: r.quantity, unit_price: r.unitPrice, total: r.total, invoice_id: r.invoiceId });
+      }
+    }
+    const existing = await api.gatePasses.find(dailyDate, DAILY_MARKER).catch(() => null);
     if (existing) {
       if (!confirm(`A daily gate pass for ${formatDate(dailyDate)} already exists. Create another one anyway?`)) {
         setGenerating(false);
@@ -150,14 +143,14 @@ export default function GatePasses() {
       '',
       'TOTAL ITEMS VALUE: ' + items.reduce((s, it) => s + it.total, 0).toFixed(2),
     ].join('\n');
-    const { data: allPasses } = await supabase.from('gate_passes').select('pass_no');
-    const usedNos = new Set((allPasses ?? []).map((p) => p.pass_no));
+    const allPasses = await api.gatePasses.list().catch(() => []);
+    const usedNos = new Set(allPasses.map((p) => p.passNo));
     let passNo = '';
     for (let n = (allPasses?.length ?? 0) + 1; n < (allPasses?.length ?? 0) + 100; n++) {
       const candidate = `${settings?.gate_pass_prefix ?? 'GP-'}${String(n).padStart(4, '0')}`;
       if (!usedNos.has(candidate)) { passNo = candidate; break; }
     }
-    const { error } = await supabase.from('gate_passes').insert({
+    const { error } = await api.gatePasses.create(gatePassInputFromLegacy({
       pass_no: passNo || `${settings?.gate_pass_prefix ?? 'GP-'}${Date.now()}`,
       pass_type: 'sales',
       customer_id: null,
@@ -167,10 +160,10 @@ export default function GatePasses() {
       items_description: description,
       total_amount: total,
       notes: DAILY_MARKER,
-    });
+    }));
     setGenerating(false);
     if (error) {
-      alert('Could not create gate pass: ' + error.message);
+      alert('Could not create gate pass: ' + error);
       return;
     }
     load();

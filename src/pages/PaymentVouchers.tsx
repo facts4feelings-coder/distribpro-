@@ -1,12 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Printer, Calendar } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, supplierDtoToLegacy, paymentVoucherDtoToLegacy, type PaymentVoucherInput } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { Customer, Supplier, PaymentVoucher, PaymentVoucherWithCustomer } from '@/lib/types';
 import Modal from '@/components/Modal';
 import CustomerBalanceBadge from '@/components/CustomerBalanceBadge';
-import { recalcCustomerBalance, recalcSupplierBalance } from '@/lib/customerBalance';
 import PrintDocument from '@/components/PrintDocument';
 import { PrintModal, PrintFormatSelector, normalizeFormat } from '@/components/PrintModal';
 import type { PrintFormat } from '@/components/PrintModal';
@@ -30,12 +29,12 @@ export default function PaymentVouchers() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('payment_vouchers').select('*, customers(*), suppliers(*)').order('created_at', { ascending: false });
-    setVouchers((data ?? []) as PaymentVoucherWithCustomer[]);
-    const { data: custs } = await supabase.from('customers').select('*').order('name');
-    setCustomers((custs ?? []) as Customer[]);
-    const { data: sups } = await supabase.from('suppliers').select('*').order('name');
-    setSuppliers((sups ?? []) as Supplier[]);
+    const data = await api.paymentVouchers.list().catch(() => []);
+    setVouchers(data.map(paymentVoucherDtoToLegacy));
+    const custs = await api.customers.list().catch(() => []);
+    setCustomers(custs.map(partyDtoToLegacy));
+    const sups = await api.suppliers.list().catch(() => []);
+    setSuppliers(sups.map(supplierDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -65,102 +64,6 @@ export default function PaymentVouchers() {
     setModalOpen(true);
   };
 
-  const applyPaymentToInvoices = async (customerId: string, amount: number) => {
-    const { data: invoices } = await supabase
-      .from('customer_invoices')
-      .select('id, paid_amount, balance, total, status')
-      .eq('customer_id', customerId)
-      .eq('invoice_type', 'sale')
-      .gt('balance', 0)
-      .order('invoice_date', { ascending: true });
-
-    let remaining = amount;
-    for (const inv of (invoices ?? []) as { id: string; paid_amount: number; balance: number; total: number; status: string }[]) {
-      if (remaining <= 0) break;
-      const applied = Math.min(remaining, inv.balance);
-      const newPaid = inv.paid_amount + applied;
-      const newBalance = inv.balance - applied;
-      await supabase.from('customer_invoices')
-        .update({ paid_amount: newPaid, balance: newBalance, status: newBalance <= 0 ? 'paid' : 'unpaid' })
-        .eq('id', inv.id);
-      remaining -= applied;
-    }
-  };
-
-  const reversePaymentFromInvoices = async (customerId: string, amount: number) => {
-    const { data: invoices } = await supabase
-      .from('customer_invoices')
-      .select('id, paid_amount, balance, total, status')
-      .eq('customer_id', customerId)
-      .eq('invoice_type', 'sale')
-      .gt('paid_amount', 0)
-      .order('invoice_date', { ascending: false });
-
-    let remaining = amount;
-    for (const inv of (invoices ?? []) as { id: string; paid_amount: number; balance: number; total: number; status: string }[]) {
-      if (remaining <= 0) break;
-      const reversed = Math.min(remaining, inv.paid_amount);
-      const newPaid = inv.paid_amount - reversed;
-      const newBalance = inv.balance + reversed;
-      await supabase.from('customer_invoices')
-        .update({ paid_amount: newPaid, balance: newBalance, status: newBalance <= 0 ? 'paid' : 'unpaid' })
-        .eq('id', inv.id);
-      remaining -= reversed;
-    }
-  };
-
-  const applyPaymentToSupplierInvoices = async (supplierId: string, amount: number) => {
-    const { data: invoices } = await supabase
-      .from('supplier_invoices')
-      .select('id, paid_amount, balance, status')
-      .eq('supplier_id', supplierId)
-      .eq('invoice_type', 'purchase')
-      .gt('balance', 0)
-      .order('invoice_date', { ascending: true });
-
-    let remaining = amount;
-    for (const inv of (invoices ?? []) as { id: string; paid_amount: number; balance: number; status: string }[]) {
-      if (remaining <= 0) break;
-      const applied = Math.min(remaining, inv.balance);
-      const newPaid = inv.paid_amount + applied;
-      const newBalance = inv.balance - applied;
-      await supabase.from('supplier_invoices')
-        .update({ paid_amount: newPaid, balance: newBalance, status: newBalance <= 0 ? 'paid' : 'unpaid' })
-        .eq('id', inv.id);
-      remaining -= applied;
-    }
-  };
-
-  const reversePaymentFromSupplierInvoices = async (supplierId: string, amount: number) => {
-    const { data: invoices } = await supabase
-      .from('supplier_invoices')
-      .select('id, paid_amount, balance, status')
-      .eq('supplier_id', supplierId)
-      .eq('invoice_type', 'purchase')
-      .gt('paid_amount', 0)
-      .order('invoice_date', { ascending: false });
-
-    let remaining = amount;
-    for (const inv of (invoices ?? []) as { id: string; paid_amount: number; balance: number; status: string }[]) {
-      if (remaining <= 0) break;
-      const reversed = Math.min(remaining, inv.paid_amount);
-      const newPaid = inv.paid_amount - reversed;
-      const newBalance = inv.balance + reversed;
-      await supabase.from('supplier_invoices')
-        .update({ paid_amount: newPaid, balance: newBalance, status: newBalance <= 0 ? 'paid' : 'unpaid' })
-        .eq('id', inv.id);
-      remaining -= reversed;
-    }
-  };
-
-  const updateCustomerBalance = async (customerId: string) => {
-    await recalcCustomerBalance(customerId);
-  };
-
-  const updateSupplierBalance = async (supplierId: string) => {
-    await recalcSupplierBalance(supplierId);
-  };
-
   const save = async () => {
     const amount = parseFloat(form.amount) || 0;
     const isSupplier = form.payee_type === 'supplier';
@@ -171,32 +74,17 @@ export default function PaymentVouchers() {
       voucher_date: form.voucher_date, amount,
       payment_method: form.payment_method, reference: form.reference || null, notes: form.notes || null,
     };
+    // The service reverses the old allocation and applies the new one
+    // (FIFO, oldest invoice first) inside a single transaction.
+    const input: PaymentVoucherInput = {
+      voucherNo: payload.voucher_no, customerId: payload.customer_id, supplierId: payload.supplier_id,
+      voucherDate: payload.voucher_date, amount: payload.amount, paymentMethod: payload.payment_method,
+      reference: payload.reference, notes: payload.notes,
+    };
     if (editing) {
-      const wasSupplier = !!editing.supplier_id;
-      await supabase.from('payment_vouchers').update(payload).eq('id', editing.id);
-      if (wasSupplier && editing.amount > 0 && editing.supplier_id) {
-        await reversePaymentFromSupplierInvoices(editing.supplier_id, editing.amount);
-        await updateSupplierBalance(editing.supplier_id);
-      } else if (!wasSupplier && editing.customer_id && editing.amount > 0) {
-        await reversePaymentFromInvoices(editing.customer_id, editing.amount);
-        await updateCustomerBalance(editing.customer_id);
-      }
-      if (isSupplier && form.supplier_id && amount > 0) {
-        await applyPaymentToSupplierInvoices(form.supplier_id, amount);
-        await updateSupplierBalance(form.supplier_id);
-      } else if (!isSupplier && form.customer_id && amount > 0) {
-        await applyPaymentToInvoices(form.customer_id, amount);
-        await updateCustomerBalance(form.customer_id);
-      }
+      await api.paymentVouchers.update(editing.id, input);
     } else {
-      await supabase.from('payment_vouchers').insert(payload);
-      if (isSupplier && form.supplier_id && amount > 0) {
-        await applyPaymentToSupplierInvoices(form.supplier_id, amount);
-        await updateSupplierBalance(form.supplier_id);
-      } else if (!isSupplier && form.customer_id && amount > 0) {
-        await applyPaymentToInvoices(form.customer_id, amount);
-        await updateCustomerBalance(form.customer_id);
-      }
+      await api.paymentVouchers.create(input);
     }
     setModalOpen(false);
     load();
@@ -206,14 +94,7 @@ export default function PaymentVouchers() {
     const voucher = vouchers.find((v) => v.id === id);
     if (!voucher) return;
     if (!confirm('Delete this voucher? The payment will be reversed from invoices.')) return;
-    await supabase.from('payment_vouchers').delete().eq('id', id);
-    if (voucher.supplier_id && voucher.amount > 0) {
-      await reversePaymentFromSupplierInvoices(voucher.supplier_id, voucher.amount);
-      await updateSupplierBalance(voucher.supplier_id);
-    } else if (voucher.customer_id && voucher.amount > 0) {
-      await reversePaymentFromInvoices(voucher.customer_id, voucher.amount);
-      await updateCustomerBalance(voucher.customer_id);
-    }
+    await api.paymentVouchers.delete(id);
     load();
   };
 

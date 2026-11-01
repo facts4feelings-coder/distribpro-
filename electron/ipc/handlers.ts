@@ -12,7 +12,17 @@ import {
   type LicenseDto,
 } from '../services/licenseService';
 import {
-  listCustomers, createCustomer, bulkCreateCustomers, updateCustomer, deleteCustomer,
+  listInvoices, listInvoicesForParty, getInvoice, listInvoiceItems, countInvoices,
+  createInvoice, updateInvoice, deleteInvoice, customerRates, listInvoicesByDate, findGatePass,
+  listPaymentVouchers, listVouchersForParty, createPaymentVoucher, updatePaymentVoucher, deletePaymentVoucher,
+  listExpenseVouchers, createExpenseVoucher, updateExpenseVoucher, deleteExpenseVoucher,
+  listGatePasses, countGatePasses, createGatePass, updateGatePass, deleteGatePass,
+  type PartyKind, type InvoiceInput, type InvoiceItemInput,
+  type PaymentVoucherInput, type ExpenseVoucherInput, type GatePassInput,
+} from '../services/transactionService';
+import {
+  listCustomers, createCustomer, bulkCreateCustomers, updateCustomer, deleteCustomer, getCustomer,
+  getProduct,
   listSuppliers, createSupplier, bulkCreateSuppliers, updateSupplier, deleteSupplier,
   listProducts, createProduct, bulkCreateProducts, updateProduct, deleteProduct,
   listRoutes, createRoute, updateRoute, deleteRoute,
@@ -86,7 +96,35 @@ export function registerHandlers(ipc: IpcMainLike, getDb: () => Db): void {
   ipc.handle('income:create', async (_e, input: IncomeInput) => createIncome(getDb(), input));
   ipc.handle('income:update', async (_e, id: string, input: IncomeInput) => updateIncome(getDb(), id, input));
   ipc.handle('income:delete', async (_e, id: string) => deleteIncome(getDb(), id));
-  // Phase 4+: invoices:*, vouchers:*, reports:*, backup:* …
+  ipc.handle('customers:get', async (_e, id: string) => getCustomer(getDb(), id));
+  ipc.handle('products:get', async (_e, id: string) => getProduct(getDb(), id));
+  // Transactions (Phase 4)
+  ipc.handle('invoices:list', async (_e, kind: PartyKind, type: string) => listInvoices(getDb(), kind, type));
+  ipc.handle('invoices:listForParty', async (_e, kind: PartyKind, partyId: string) => listInvoicesForParty(getDb(), kind, partyId));
+  ipc.handle('invoices:get', async (_e, kind: PartyKind, id: string) => getInvoice(getDb(), kind, id));
+  ipc.handle('invoices:items', async (_e, kind: PartyKind, invoiceId: string) => listInvoiceItems(getDb(), kind, invoiceId));
+  ipc.handle('invoices:count', async (_e, kind: PartyKind, type: string) => countInvoices(getDb(), kind, type));
+  ipc.handle('invoices:create', async (_e, kind: PartyKind, input: InvoiceInput, items: InvoiceItemInput[], opts?: { withGatePass?: boolean }) => createInvoice(getDb(), kind, input, items, opts));
+  ipc.handle('invoices:update', async (_e, kind: PartyKind, id: string, input: InvoiceInput, items: InvoiceItemInput[]) => updateInvoice(getDb(), kind, id, input, items));
+  ipc.handle('invoices:delete', async (_e, kind: PartyKind, id: string) => deleteInvoice(getDb(), kind, id));
+  ipc.handle('invoices:customerRates', async (_e, customerId: string) => customerRates(getDb(), customerId));
+  ipc.handle('invoices:listByDate', async (_e, kind: PartyKind, date: string) => listInvoicesByDate(getDb(), kind, date));
+  ipc.handle('gatePasses:find', async (_e, passDate: string, notes: string) => findGatePass(getDb(), passDate, notes));
+  ipc.handle('paymentVouchers:list', async () => listPaymentVouchers(getDb()));
+  ipc.handle('paymentVouchers:listForParty', async (_e, kind: PartyKind, partyId: string) => listVouchersForParty(getDb(), kind, partyId));
+  ipc.handle('paymentVouchers:create', async (_e, input: PaymentVoucherInput) => createPaymentVoucher(getDb(), input));
+  ipc.handle('paymentVouchers:update', async (_e, id: string, input: PaymentVoucherInput) => updatePaymentVoucher(getDb(), id, input));
+  ipc.handle('paymentVouchers:delete', async (_e, id: string) => deletePaymentVoucher(getDb(), id));
+  ipc.handle('expenseVouchers:list', async () => listExpenseVouchers(getDb()));
+  ipc.handle('expenseVouchers:create', async (_e, input: ExpenseVoucherInput) => createExpenseVoucher(getDb(), input));
+  ipc.handle('expenseVouchers:update', async (_e, id: string, input: ExpenseVoucherInput) => updateExpenseVoucher(getDb(), id, input));
+  ipc.handle('expenseVouchers:delete', async (_e, id: string) => deleteExpenseVoucher(getDb(), id));
+  ipc.handle('gatePasses:list', async () => listGatePasses(getDb()));
+  ipc.handle('gatePasses:count', async () => countGatePasses(getDb()));
+  ipc.handle('gatePasses:create', async (_e, input: GatePassInput) => createGatePass(getDb(), input));
+  ipc.handle('gatePasses:update', async (_e, id: string, input: GatePassInput) => updateGatePass(getDb(), id, input));
+  ipc.handle('gatePasses:delete', async (_e, id: string) => deleteGatePass(getDb(), id));
+  // Phase 5+: reports:*, backup:* …
 }
 
 export type { LicenseDto };

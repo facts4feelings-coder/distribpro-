@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { UserPlus, PackagePlus, X } from 'lucide-react';
-// TODO(Phase 4): QuickAdd is used inside the invoice/sale screens, which are
-// still on the local shim — it migrates together with its host pages so a
-// quick-added customer/product lands in the same database the host reads.
-import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, productDtoToLegacy } from '@/lib/api';
 import type { Customer, Product } from '@/lib/types';
 
 export function QuickAddCustomer({ onAdded }: { onAdded: (c: Customer) => void }) {
@@ -15,17 +12,17 @@ export function QuickAddCustomer({ onAdded }: { onAdded: (c: Customer) => void }
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    const { data, error } = await supabase
-      .from('customers')
-      .insert({ name: name.trim(), phone: phone.trim() || null, opening_balance: 0, current_balance: 0, balance_type: 'receivable' })
-      .select()
-      .single();
+    const res = await api.customers.create({
+      name: name.trim(), phone: phone.trim() || null, address: null, city: null,
+      openingBalance: 0, currentBalance: 0,
+    });
     setSaving(false);
-    if (error) { alert('Could not save customer: ' + error.message); return; }
+    if (res.error) { alert('Could not save customer: ' + res.error); return; }
+    const created = res.id ? await api.customers.get(res.id).catch(() => null) : null;
     setOpen(false);
     setName('');
     setPhone('');
-    onAdded(data as Customer);
+    if (created) onAdded(partyDtoToLegacy(created));
   };
 
   if (!open) {
@@ -63,18 +60,19 @@ export function QuickAddProduct({ onAdded }: { onAdded: (p: Product) => void }) 
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    const { data, error } = await supabase
-      .from('products')
-      .insert({ name: name.trim(), sku: sku.trim() || null, unit: 'pcs', purchase_price: parseFloat(salePrice) || 0, sale_price: parseFloat(salePrice) || 0, stock_quantity: 0, reorder_level: 0 })
-      .select()
-      .single();
+    const price = parseFloat(salePrice) || 0;
+    const res = await api.products.create({
+      name: name.trim(), sku: sku.trim() || null, category: null, unit: 'pcs',
+      purchasePrice: price, salePrice: price, stockQuantity: 0, reorderLevel: 0,
+    });
     setSaving(false);
-    if (error) { alert('Could not save product: ' + error.message); return; }
+    if (res.error) { alert('Could not save product: ' + res.error); return; }
+    const created = res.id ? await api.products.get(res.id).catch(() => null) : null;
     setOpen(false);
     setName('');
     setSku('');
     setSalePrice('');
-    onAdded(data as Product);
+    if (created) onAdded(productDtoToLegacy(created));
   };
 
   if (!open) {

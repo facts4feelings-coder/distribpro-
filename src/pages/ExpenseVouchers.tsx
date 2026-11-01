@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Calendar } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, expenseVoucherDtoToLegacy, type ExpenseVoucherInput } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { ExpenseVoucher } from '@/lib/types';
@@ -20,8 +20,8 @@ export default function ExpenseVouchers() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('expense_vouchers').select('*').order('created_at', { ascending: false });
-    setVouchers((data ?? []) as ExpenseVoucher[]);
+    const data = await api.expenseVouchers.list().catch(() => []);
+    setVouchers(data.map(expenseVoucherDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -56,10 +56,14 @@ export default function ExpenseVouchers() {
       category: form.category, description: form.description || null,
       amount: parseFloat(form.amount) || 0, paid_to: form.paid_to || null,
     };
+    const input: ExpenseVoucherInput = {
+      voucherNo: payload.voucher_no, expenseDate: payload.expense_date, category: payload.category,
+      description: payload.description, amount: payload.amount, paidTo: payload.paid_to,
+    };
     if (editing) {
-      await supabase.from('expense_vouchers').update(payload).eq('id', editing.id);
+      await api.expenseVouchers.update(editing.id, input);
     } else {
-      await supabase.from('expense_vouchers').insert(payload);
+      await api.expenseVouchers.create(input);
     }
     setModalOpen(false);
     load();
@@ -67,7 +71,7 @@ export default function ExpenseVouchers() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this expense voucher?')) return;
-    await supabase.from('expense_vouchers').delete().eq('id', id);
+    await api.expenseVouchers.delete(id);
     load();
   };
 

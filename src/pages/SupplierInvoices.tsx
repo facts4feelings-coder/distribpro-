@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Printer, Eye, Calendar, CheckSquare, Square } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, supplierDtoToLegacy, productDtoToLegacy, invoiceDtoToSupplierLegacy, supplierItemDtoToLegacy, invoiceInputFromLegacy, invoiceItemsInputFromLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { Supplier, Product, SupplierInvoice, SupplierInvoiceItem, InvoiceWithSupplier } from '@/lib/types';
@@ -48,14 +48,14 @@ export default function SupplierInvoices() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('supplier_invoices').select('*, suppliers(*)').eq('invoice_type', 'purchase').order('created_at', { ascending: false });
-    setInvoices((data ?? []) as InvoiceWithSupplier[]);
+    const data = await api.invoices.list('supplier', 'purchase').catch(() => []);
+    setInvoices(data.map(invoiceDtoToSupplierLegacy));
     const [s, p] = await Promise.all([
-      supabase.from('suppliers').select('*').order('name'),
-      supabase.from('products').select('*').order('name'),
+      api.suppliers.list().catch(() => []),
+      api.products.list().catch(() => []),
     ]);
-    setSuppliers((s.data ?? []) as Supplier[]);
-    setProducts((p.data ?? []) as Product[]);
+    setSuppliers(s.map(supplierDtoToLegacy));
+    setProducts(p.map(productDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -81,7 +81,7 @@ export default function SupplierInvoices() {
 
   const openEdit = async (inv: SupplierInvoice) => {
     setEditing(inv);
-    const { data: invItems } = await supabase.from('supplier_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('supplier', inv.id).catch(() => [])).map(supplierItemDtoToLegacy);
     setForm({
       invoice_no: inv.invoice_no,
       supplier_id: inv.supplier_id,
@@ -92,7 +92,7 @@ export default function SupplierInvoices() {
       paid_amount: String(inv.paid_amount),
       notes: inv.notes ?? '',
     });
-    setItems((invItems ?? []).map((i: SupplierInvoiceItem) => ({
+    setItems(invItems.map((i) => ({
       product_id: i.product_id ?? '', product_name: i.product_name,
       quantity: String(i.quantity), unit_price: String(i.unit_price),
       discount_percent: String(i.discount_percent ?? 0), total: String(i.total),
@@ -173,41 +173,33 @@ export default function SupplierInvoices() {
       status: totals.balance <= 0 ? 'paid' : 'unpaid', notes: form.notes || null,
     };
 
-    let savedId: string | null = null;
+    const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
+      product_id: i.product_id || null, product_name: i.product_name,
+      quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0,
+      discount_percent: parseFloat(i.discount_percent) || 0, total: parseFloat(i.total) || 0,
+    }));
+    const input = invoiceInputFromLegacy({ ...payload, invoice_type: 'purchase' }, form.supplier_id);
+    const itemInputs = invoiceItemsInputFromLegacy(itemsPayload);
 
+    let savedId: string | null = null;
     if (editing) {
-      await supabase.from('supplier_invoices').update(payload).eq('id', editing.id);
-      await supabase.from('supplier_invoice_items').delete().eq('invoice_id', editing.id);
-      const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
-        invoice_id: editing.id, product_id: i.product_id || null, product_name: i.product_name,
-        quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0,
-        discount_percent: parseFloat(i.discount_percent) || 0, total: parseFloat(i.total) || 0,
-      }));
-      if (itemsPayload.length > 0) await supabase.from('supplier_invoice_items').insert(itemsPayload);
+      await api.invoices.update('supplier', editing.id, input, itemInputs);
       savedId = editing.id;
     } else {
-      const { data: newInv } = await supabase.from('supplier_invoices').insert(payload).select().single();
-      if (newInv) {
-        const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
-          invoice_id: (newInv as SupplierInvoice).id, product_id: i.product_id || null, product_name: i.product_name,
-          quantity: parseFloat(i.quantity) || 0, unit_price: parseFloat(i.unit_price) || 0,
-          discount_percent: parseFloat(i.discount_percent) || 0, total: parseFloat(i.total) || 0,
-        }));
-        if (itemsPayload.length > 0) await supabase.from('supplier_invoice_items').insert(itemsPayload);
-        savedId = (newInv as SupplierInvoice).id;
-      }
+      const res = await api.invoices.create('supplier', input, itemInputs);
+      savedId = res.invoice?.id ?? null;
     }
 
     await load();
 
     if (savedId) {
-      const { data: freshInv } = await supabase.from('supplier_invoices').select('*').eq('id', savedId).single();
-      const { data: freshItems } = await supabase.from('supplier_invoice_items').select('*').eq('invoice_id', savedId);
+      const freshInv = await api.invoices.get('supplier', savedId).catch(() => null);
+      const freshItems = (await api.invoices.items('supplier', savedId).catch(() => [])).map(supplierItemDtoToLegacy);
       if (freshInv) {
-        const inv = freshInv as SupplierInvoice;
+        const inv = invoiceDtoToSupplierLegacy(freshInv);
         const sup = suppliers.find((s) => s.id === inv.supplier_id) ?? null;
         setViewInvoice(inv);
-        setViewItems((freshItems ?? []) as SupplierInvoiceItem[]);
+        setViewItems(freshItems);
         setViewSupplier(sup);
         setSavedInvoice(inv);
       }
@@ -217,15 +209,14 @@ export default function SupplierInvoices() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this supplier invoice? This cannot be undone.')) return;
-    await supabase.from('supplier_invoice_items').delete().eq('invoice_id', id);
-    await supabase.from('supplier_invoices').delete().eq('id', id);
+    await api.invoices.delete('supplier', id);
     load();
   };
 
   const openPrint = async (inv: SupplierInvoice) => {
-    const { data: invItems } = await supabase.from('supplier_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('supplier', inv.id).catch(() => [])).map(supplierItemDtoToLegacy);
     const sup = suppliers.find((s) => s.id === inv.supplier_id) ?? null;
-    setPrintEntries([{ invoice: inv, items: (invItems ?? []) as SupplierInvoiceItem[], supplier: sup }]);
+    setPrintEntries([{ invoice: inv, items: invItems, supplier: sup }]);
     setPrintFormat(normalizeFormat(settings?.default_print_format));
     setPrintOpen(true);
   };
@@ -236,9 +227,9 @@ export default function SupplierInvoices() {
     for (const id of selectedIds) {
       const inv = invoices.find((i) => i.id === id);
       if (!inv) continue;
-      const { data: invItems } = await supabase.from('supplier_invoice_items').select('*').eq('invoice_id', id);
+      const invItems = (await api.invoices.items('supplier', id).catch(() => [])).map(supplierItemDtoToLegacy);
       const sup = suppliers.find((s) => s.id === inv.supplier_id) ?? null;
-      entries.push({ invoice: inv, items: (invItems ?? []) as SupplierInvoiceItem[], supplier: sup });
+      entries.push({ invoice: inv, items: invItems, supplier: sup });
     }
     setPrintEntries(entries);
     setPrintFormat(normalizeFormat(settings?.default_print_format));
@@ -263,10 +254,10 @@ export default function SupplierInvoices() {
   };
 
   const openView = async (inv: SupplierInvoice) => {
-    const { data: invItems } = await supabase.from('supplier_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('supplier', inv.id).catch(() => [])).map(supplierItemDtoToLegacy);
     const sup = suppliers.find((s) => s.id === inv.supplier_id) ?? null;
     setViewInvoice(inv);
-    setViewItems((invItems ?? []) as SupplierInvoiceItem[]);
+    setViewItems(invItems);
     setViewSupplier(sup);
     setSavedInvoice(null);
   };

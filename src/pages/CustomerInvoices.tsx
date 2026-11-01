@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Printer, Eye, Calendar, CheckSquare, Square } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api, partyDtoToLegacy, productDtoToLegacy, invoiceDtoToCustomerLegacy, invoiceItemDtoToLegacy, invoiceInputFromLegacy, invoiceItemsInputFromLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, todayISO, formatDateInput } from '@/lib/utils';
 import type { Customer, Product, CustomerInvoice, CustomerInvoiceItem, InvoiceWithCustomer } from '@/lib/types';
@@ -9,7 +9,6 @@ import PrintDocument from '@/components/PrintDocument';
 import { PrintModal, PrintFormatSelector, normalizeFormat } from '@/components/PrintModal';
 import type { PrintFormat } from '@/components/PrintModal';
 import InvoiceLineItems from '@/components/InvoiceLineItems';
-import { recalcCustomerBalance } from '@/lib/customerBalance';
 import { QuickAddCustomer, QuickAddProduct } from '@/components/QuickAdd';
 import CustomerBalanceBadge from '@/components/CustomerBalanceBadge';
 import type { GatePass } from '@/lib/types';
@@ -58,16 +57,8 @@ export default function CustomerInvoices() {
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('customer_invoice_items')
-        .select('product_id, unit_price, customer_invoices!inner(customer_id)')
-        .eq('customer_invoices.customer_id', form.customer_id)
-        .order('created_at', { ascending: false });
+      const rates = await api.invoices.customerRates(form.customer_id).catch(() => ({} as Record<string, number>));
       if (cancelled) return;
-      const rates: Record<string, number> = {};
-      for (const row of (data ?? []) as { product_id: string | null; unit_price: number }[]) {
-        if (row.product_id && !(row.product_id in rates)) rates[row.product_id] = row.unit_price;
-      }
       setCustomerRates(rates);
     })();
     return () => { cancelled = true; };
@@ -75,18 +66,14 @@ export default function CustomerInvoices() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('customer_invoices')
-      .select('*, customers(*)')
-      .eq('invoice_type', 'sale')
-      .order('created_at', { ascending: false });
-    setInvoices((data ?? []) as InvoiceWithCustomer[]);
+    const data = await api.invoices.list('customer', 'sale').catch(() => []);
+    setInvoices(data.map(invoiceDtoToCustomerLegacy));
     const [c, p] = await Promise.all([
-      supabase.from('customers').select('*').order('name'),
-      supabase.from('products').select('*').order('name'),
+      api.customers.list().catch(() => []),
+      api.products.list().catch(() => []),
     ]);
-    setCustomers((c.data ?? []) as Customer[]);
-    setProducts((p.data ?? []) as Product[]);
+    setCustomers(c.map(partyDtoToLegacy));
+    setProducts(p.map(productDtoToLegacy));
     setLoading(false);
   }, []);
 
@@ -96,30 +83,6 @@ export default function CustomerInvoices() {
     const prefix = settings?.invoice_prefix ?? 'INV-';
     const count = invoices.length + 1;
     return `${prefix}${String(count).padStart(4, '0')}`;
-  };
-
-  const generatePassNo = (passCount: number) => {
-    const prefix = settings?.gate_pass_prefix ?? 'GP-';
-    return `${prefix}${String(passCount + 1).padStart(4, '0')}`;
-  };
-
-  const createGatePassForInvoice = async (inv: CustomerInvoice, cust: Customer | null) => {
-    const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
-    const desc = ((invItems ?? []) as CustomerInvoiceItem[])
-      .map((i) => `${i.product_name} x ${i.quantity}`)
-      .join(', ');
-    const { data: existing } = await supabase.from('gate_passes').select('id', { count: 'exact', head: true });
-    const payload: Partial<GatePass> = {
-      pass_no: generatePassNo(existing?.length ?? 0),
-      pass_type: 'sales',
-      customer_id: inv.customer_id,
-      customer_name: cust?.name ?? '',
-      pass_date: inv.invoice_date,
-      reference_invoice: inv.invoice_no,
-      items_description: desc || null,
-      total_amount: inv.total,
-    };
-    await supabase.from('gate_passes').insert(payload);
   };
 
   const filtered = invoices.filter((inv) =>
@@ -146,7 +109,7 @@ export default function CustomerInvoices() {
 
   const openEdit = async (inv: CustomerInvoice) => {
     setEditing(inv);
-    const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('customer', inv.id).catch(() => [])).map(invoiceItemDtoToLegacy);
     setForm({
       invoice_no: inv.invoice_no,
       customer_id: inv.customer_id,
@@ -157,7 +120,7 @@ export default function CustomerInvoices() {
       paid_amount: String(inv.paid_amount),
       notes: inv.notes ?? '',
     });
-    setItems((invItems ?? []).map((i: CustomerInvoiceItem) => ({
+    setItems(invItems.map((i) => ({
       product_id: i.product_id ?? '',
       product_name: i.product_name,
       quantity: String(i.quantity),
@@ -248,61 +211,37 @@ export default function CustomerInvoices() {
       notes: form.notes || null,
     };
 
-    let savedId: string | null = null;
-    const affectedCustomerIds = new Set<string>();
-    if (form.customer_id) affectedCustomerIds.add(form.customer_id);
-    if (editing && editing.customer_id) affectedCustomerIds.add(editing.customer_id);
+    const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
+      product_id: i.product_id || null,
+      product_name: i.product_name,
+      quantity: parseFloat(i.quantity) || 0,
+      unit_price: parseFloat(i.unit_price) || 0,
+      discount_percent: parseFloat(i.discount_percent) || 0,
+      total: parseFloat(i.total) || 0,
+    }));
+    const input = invoiceInputFromLegacy({ ...payload, invoice_type: 'sale' }, form.customer_id);
+    const itemInputs = invoiceItemsInputFromLegacy(itemsPayload);
 
+    let savedId: string | null = null;
     if (editing) {
-      await supabase.from('customer_invoices').update(payload).eq('id', editing.id);
-      await supabase.from('customer_invoice_items').delete().eq('invoice_id', editing.id);
-      const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
-        invoice_id: editing.id,
-        product_id: i.product_id || null,
-        product_name: i.product_name,
-        quantity: parseFloat(i.quantity) || 0,
-        unit_price: parseFloat(i.unit_price) || 0,
-        discount_percent: parseFloat(i.discount_percent) || 0,
-        total: parseFloat(i.total) || 0,
-      }));
-      if (itemsPayload.length > 0) {
-        await supabase.from('customer_invoice_items').insert(itemsPayload);
-      }
+      await api.invoices.update('customer', editing.id, input, itemInputs);
       savedId = editing.id;
     } else {
-      const { data: newInv } = await supabase.from('customer_invoices').insert(payload).select().single();
-      if (newInv) {
-        const newCust = customers.find((c) => c.id === (newInv as CustomerInvoice).customer_id) ?? null;
-        await createGatePassForInvoice(newInv as CustomerInvoice, newCust);
-        const itemsPayload = items.filter((i) => i.product_name).map((i) => ({
-          invoice_id: (newInv as CustomerInvoice).id,
-          product_id: i.product_id || null,
-          product_name: i.product_name,
-          quantity: parseFloat(i.quantity) || 0,
-          unit_price: parseFloat(i.unit_price) || 0,
-          discount_percent: parseFloat(i.discount_percent) || 0,
-          total: parseFloat(i.total) || 0,
-        }));
-        if (itemsPayload.length > 0) {
-          await supabase.from('customer_invoice_items').insert(itemsPayload);
-        }
-        savedId = (newInv as CustomerInvoice).id;
-      }
+      const res = await api.invoices.create('customer', input, itemInputs, { withGatePass: true });
+      savedId = res.invoice?.id ?? null;
     }
-
-    for (const cid of affectedCustomerIds) await recalcCustomerBalance(cid);
 
     await load();
 
     // After save, show the invoice with print option
     if (savedId) {
-      const { data: freshInv } = await supabase.from('customer_invoices').select('*').eq('id', savedId).single();
-      const { data: freshItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', savedId);
+      const freshInv = await api.invoices.get('customer', savedId).catch(() => null);
+      const freshItems = (await api.invoices.items('customer', savedId).catch(() => [])).map(invoiceItemDtoToLegacy);
       if (freshInv) {
-        const inv = freshInv as CustomerInvoice;
+        const inv = invoiceDtoToCustomerLegacy(freshInv);
         const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
         setViewInvoice(inv);
-        setViewItems((freshItems ?? []) as CustomerInvoiceItem[]);
+        setViewItems(freshItems);
         setViewCustomer(cust);
         setSavedInvoice(inv);
       }
@@ -312,17 +251,14 @@ export default function CustomerInvoices() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this invoice? This cannot be undone.')) return;
-    const inv = invoices.find((i) => i.id === id);
-    await supabase.from('customer_invoice_items').delete().eq('invoice_id', id);
-    await supabase.from('customer_invoices').delete().eq('id', id);
-    if (inv?.customer_id) await recalcCustomerBalance(inv.customer_id);
+    await api.invoices.delete('customer', id);
     load();
   };
 
   const openPrint = async (inv: CustomerInvoice) => {
-    const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('customer', inv.id).catch(() => [])).map(invoiceItemDtoToLegacy);
     const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
-    setPrintEntries([{ invoice: inv, items: (invItems ?? []) as CustomerInvoiceItem[], customer: cust }]);
+    setPrintEntries([{ invoice: inv, items: invItems, customer: cust }]);
     setPrintFormat(normalizeFormat(settings?.default_print_format));
     setPrintOpen(true);
   };
@@ -333,9 +269,9 @@ export default function CustomerInvoices() {
     for (const id of selectedIds) {
       const inv = invoices.find((i) => i.id === id);
       if (!inv) continue;
-      const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', id);
+      const invItems = (await api.invoices.items('customer', id).catch(() => [])).map(invoiceItemDtoToLegacy);
       const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
-      entries.push({ invoice: inv, items: (invItems ?? []) as CustomerInvoiceItem[], customer: cust });
+      entries.push({ invoice: inv, items: invItems, customer: cust });
     }
     setPrintEntries(entries);
     setPrintFormat(normalizeFormat(settings?.default_print_format));
@@ -360,10 +296,10 @@ export default function CustomerInvoices() {
   };
 
   const openView = async (inv: CustomerInvoice) => {
-    const { data: invItems } = await supabase.from('customer_invoice_items').select('*').eq('invoice_id', inv.id);
+    const invItems = (await api.invoices.items('customer', inv.id).catch(() => [])).map(invoiceItemDtoToLegacy);
     const cust = customers.find((c) => c.id === inv.customer_id) ?? null;
     setViewInvoice(inv);
-    setViewItems((invItems ?? []) as CustomerInvoiceItem[]);
+    setViewItems(invItems);
     setViewCustomer(cust);
     setSavedInvoice(null);
   };

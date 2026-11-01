@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Plus, Search, Pencil, Trash2, BookOpen, Phone, MapPin, Printer, Download, Upload } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { api, partyDtoToLegacy, partyInputFromLegacy } from '@/lib/api';
+import { api, partyDtoToLegacy, partyInputFromLegacy, invoiceDtoToCustomerLegacy, paymentVoucherDtoToLegacy } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, formatDate, escapeHtml } from '@/lib/utils';
 import { exportToCSV, parseCSV } from '@/lib/csv';
@@ -246,22 +245,22 @@ function LedgerModal({ customer, onClose, sym }: { customer: Customer; onClose: 
 
   useEffect(() => {
     (async () => {
-      // TODO(Phase 4): ledger reads invoices/vouchers — migrates with the
-      // transaction services; still on the local shim until then.
-      const [invoices, payments] = await Promise.all([
-        supabase.from('customer_invoices').select('*').eq('customer_id', customer.id).order('invoice_date'),
-        supabase.from('payment_vouchers').select('*').eq('customer_id', customer.id).order('voucher_date'),
+      const [invDtos, payDtos] = await Promise.all([
+        api.invoices.listForParty('customer', customer.id).catch(() => []),
+        api.paymentVouchers.listForParty('customer', customer.id).catch(() => []),
       ]);
+      const invoices = invDtos.map(invoiceDtoToCustomerLegacy);
+      const payments = payDtos.map(paymentVoucherDtoToLegacy);
 
       type RawEntry = { date: string; description: string; debit: number; credit: number };
       const raw: RawEntry[] = [];
 
       raw.push({ date: customer.created_at, description: 'Opening Balance', debit: customer.opening_balance, credit: 0 });
 
-      (invoices.data as CustomerInvoice[] ?? []).forEach((inv) => {
+      invoices.forEach((inv) => {
         raw.push({ date: inv.invoice_date, description: `Invoice ${inv.invoice_no}`, debit: inv.total, credit: inv.paid_amount });
       });
-      (payments.data as PaymentVoucher[] ?? []).forEach((pv) => {
+      payments.forEach((pv) => {
         raw.push({ date: pv.voucher_date, description: `Payment ${pv.voucher_no}`, debit: 0, credit: pv.amount });
       });
 
