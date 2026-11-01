@@ -1,0 +1,171 @@
+import { useEffect, useState, useCallback } from 'react';
+import { Download, TrendingUp, TrendingDown, DollarSign, Percent, Printer } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useSettings } from '@/hooks/useSettings';
+import { formatCurrency } from '@/lib/utils';
+import type { CustomerInvoiceItem } from '@/lib/types';
+
+import { printHtml } from '@/lib/reportPrint';
+
+export default function ProfitReport() {
+  const { settings } = useSettings();
+  const sym = settings?.currency_symbol ?? 'Rs';
+  const [loading, setLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [productProfits, setProductProfits] = useState<{ name: string; qtySold: number; revenue: number; cost: number; profit: number; margin: number }[]>([]);
+  const [totals, setTotals] = useState({ revenue: 0, cost: 0, profit: 0, margin: 0 });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    let salesQuery = supabase.from('customer_invoice_items').select('product_name, quantity, unit_price, total, product_id');
+
+    if (dateFrom) {
+      salesQuery = salesQuery.gte('created_at', dateFrom);
+    }
+    if (dateTo) {
+      salesQuery = salesQuery.lte('created_at', dateTo + 'T23:59:59');
+    }
+
+    const [salesRes, productsRes] = await Promise.all([
+      salesQuery,
+      supabase.from('products').select('id, name, purchase_price, sale_price'),
+    ]);
+
+    const salesItems = (salesRes.data ?? []) as CustomerInvoiceItem[];
+    const products = (productsRes.data ?? []) as { id: string; name: string; purchase_price: number; sale_price: number }[];
+
+    const productMap = new Map<string, { purchase_price: number; sale_price: number }>();
+    products.forEach((p) => productMap.set(p.id, { purchase_price: p.purchase_price, sale_price: p.sale_price }));
+
+    const profitMap = new Map<string, { name: string; qtySold: number; revenue: number; cost: number }>();
+
+    salesItems.forEach((item) => {
+      const key = item.product_id ?? item.product_name;
+      const existing = profitMap.get(key) ?? { name: item.product_name, qtySold: 0, revenue: 0, cost: 0 };
+      existing.qtySold += item.quantity;
+      existing.revenue += item.total;
+      const prod = item.product_id ? productMap.get(item.product_id) : null;
+      existing.cost += item.quantity * (prod?.purchase_price ?? item.unit_price * 0.8);
+      profitMap.set(key, existing);
+    });
+
+    const results = Array.from(profitMap.values()).map((v) => {
+      const profit = v.revenue - v.cost;
+      const margin = v.revenue > 0 ? (profit / v.revenue) * 100 : 0;
+      return { ...v, profit, margin };
+    }).sort((a, b) => b.profit - a.profit);
+
+    setProductProfits(results);
+
+    const totalRevenue = results.reduce((s, r) => s + r.revenue, 0);
+    const totalCost = results.reduce((s, r) => s + r.cost, 0);
+    const totalProfit = totalRevenue - totalCost;
+    setTotals({ revenue: totalRevenue, cost: totalCost, profit: totalProfit, margin: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0 });
+    setLoading(false);
+  }, [dateFrom, dateTo]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const exportCSV = () => {
+    const headers = ['Product', 'Qty Sold', 'Revenue', 'Cost', 'Profit', 'Margin %'];
+    const rows = productProfits.map((p) => [p.name, p.qtySold, p.revenue.toFixed(2), p.cost.toFixed(2), p.profit.toFixed(2), p.margin.toFixed(2)]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `profit-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printReport = () => {
+    const content = document.getElementById('profit-report-print')?.innerHTML ?? '';
+    printHtml('Profit Report', `<h1>Profit Report</h1>${content}`);
+  };
+
+  return (
+    <div className="space-y-4" id="profit-report-print">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <ProfitCard label="Total Revenue" value={formatCurrency(totals.revenue, sym)} color="bg-blue-50 text-blue-600" icon={<TrendingUp size={20} />} />
+        <ProfitCard label="Total Cost" value={formatCurrency(totals.cost, sym)} color="bg-amber-50 text-amber-600" icon={<TrendingDown size={20} />} />
+        <ProfitCard label="Net Profit" value={formatCurrency(totals.profit, sym)} color={totals.profit >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} icon={<DollarSign size={20} />} />
+        <ProfitCard label="Profit Margin" value={`${totals.margin.toFixed(1)}%`} color="bg-violet-50 text-violet-600" icon={<Percent size={20} />} />
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-between">
+        <div className="flex items-center gap-2">
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+          <span className="text-slate-400 text-sm">to</span>
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500" />
+        </div>
+        <div className="flex gap-2">
+          <button onClick={printReport} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all">
+            <Printer size={18} /> Print
+          </button>
+          <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-all">
+            <Download size={18} /> Export CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {loading ? <div className="p-8 text-center text-slate-400">Loading...</div> : productProfits.length === 0 ? (
+          <div className="p-8 text-center text-slate-400">No sales data available for profit calculation.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase">Product</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase">Qty Sold</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase">Revenue</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase">Cost</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase">Profit</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase">Margin</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {productProfits.map((p, i) => (
+                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-slate-800">{p.name}</td>
+                    <td className="px-4 py-3 text-right text-sm text-slate-600">{p.qtySold}</td>
+                    <td className="px-4 py-3 text-right text-sm text-slate-600">{formatCurrency(p.revenue, sym)}</td>
+                    <td className="px-4 py-3 text-right text-sm text-slate-600">{formatCurrency(p.cost, sym)}</td>
+                    <td className={`px-4 py-3 text-right font-bold ${p.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(p.profit, sym)}</td>
+                    <td className="px-4 py-3 text-right text-sm text-slate-600">{p.margin.toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                <tr>
+                  <td className="px-4 py-3 font-bold text-slate-700 text-right" colSpan={2}>Totals:</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{formatCurrency(totals.revenue, sym)}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{formatCurrency(totals.cost, sym)}</td>
+                  <td className={`px-4 py-3 text-right font-bold ${totals.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(totals.profit, sym)}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{totals.margin.toFixed(1)}%</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProfitCard({ label, value, color, icon }: { label: string; value: string; color: string; icon: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="flex items-center gap-3 mb-2">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>{icon}</div>
+        <span className="text-sm text-slate-500">{label}</span>
+      </div>
+      <p className="text-2xl font-bold text-slate-800">{value}</p>
+    </div>
+  );
+}

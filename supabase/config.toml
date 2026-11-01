@@ -1,0 +1,8 @@
+[functions.create-admin-user]
+verify_jwt = true
+
+[functions.login-username]
+verify_jwt = false
+
+[functions.reset-password]
+verify_jwt = false
