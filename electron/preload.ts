@@ -1,6 +1,6 @@
 // Preload bridge — the ONLY way the renderer reaches the main process.
-// New typed API lives on window.api; the legacy electronAPI.dataDir channel
-// is kept while PGlite-era pages are still being migrated.
+// The typed API lives on window.api.
+// Every channel is a thin invoke() onto a service in the main process.
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
@@ -133,10 +133,4 @@ contextBridge.exposeInMainWorld('api', {
     setActive: (id: string, isActive: boolean) => ipcRenderer.invoke('licenses:setActive', id, isActive),
     delete: (id: string) => ipcRenderer.invoke('licenses:delete', id),
   },
-});
-
-contextBridge.exposeInMainWorld('electronAPI', {
-  platform: process.platform,
-  isElectron: true,
-  dataDir: () => ipcRenderer.invoke('distribpro:dataDir'),
 });

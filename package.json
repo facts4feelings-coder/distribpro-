@@ -6,20 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:offline": "OFFLINE=1 vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "electron:dev": "OFFLINE=1 vite build && npm run build:electron && electron electron-dist/main.cjs",
-    "electron:build": "OFFLINE=1 vite build && electron-builder --win --x64",
-    "dist": "OFFLINE=1 vite build && electron-builder --win nsis --x64",
+    "electron:dev": "npm run build && npm run build:electron && electron electron-dist/main.cjs",
+    "electron:build": "npm run build && npm run build:electron && electron-builder --win --x64",
+    "dist": "npm run build && npm run build:electron && electron-builder --win nsis --x64",
     "build:electron": "esbuild electron/main.ts --bundle --platform=node --format=cjs --external:electron --external:better-sqlite3 --outfile=electron-dist/main.cjs && esbuild electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=electron-dist/preload.cjs",
     "test": "vitest run",
     "typecheck:electron": "tsc --noEmit -p tsconfig.electron.json"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.5.10",
-    "@supabase/supabase-js": "^2.57.4",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^0.446.0",
@@ -54,13 +51,12 @@
     "appId": "com.distribpro.app",
     "productName": "DistribPro",
     "directories": {
-      "output": "release",
-      "buildResources": "electron"
+      "output": "release"
     },
     "files": [
       "dist/**/*",
-      "electron/main.cjs",
-      "electron/preload.cjs"
+      "electron-dist/**/*",
+      "package.json"
     ],
     "win": {
       "target": [
@@ -77,7 +73,7 @@
           ]
         }
       ],
-      "icon": "electron/build/icon.ico"
+      "signAndEditExecutable": false
     },
     "portable": {
       "artifactName": "DistribPro-Portable-${version}.exe"
@@ -86,13 +82,21 @@
       "oneClick": false,
       "perMachine": true,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "electron/build/icon.ico",
-      "uninstallerIcon": "electron/build/icon.ico",
-      "installerHeaderIcon": "electron/build/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "DistribPro",
       "artifactName": "DistribPro-Setup-${version}.exe"
-    }
-  }
+    },
+    "extraResources": [
+      {
+        "from": "electron/db/migrations",
+        "to": "migrations"
+      }
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "npmRebuild": false
+  },
+  "main": "electron-dist/main.cjs"
 }

@@ -1,8 +1,7 @@
-// DistribPro — Electron main process (SQLite version, Phase 1 skeleton).
-// DB file: <userData>/distribpro.db (better-sqlite3, WAL). The legacy
-// electron/main.cjs + PGlite flow stays in place until the renderer switch
-// in later phases; this file is bundled to electron-dist/ by
-// `npm run build:electron` and becomes the real entry at cutover (Phase 8).
+// DistribPro — Electron main process.
+// DB file: <userData>/distribpro-data/distribpro.db (better-sqlite3, WAL).
+// Bundled to electron-dist/ by `npm run build:electron`; package.json "main"
+// points there, for both dev and the packaged app.
 import { app, BrowserWindow, Menu, ipcMain } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -20,8 +19,8 @@ function dataDir(): string {
 }
 
 function migrationsFolder(): string {
-  // Bundled layout: electron-dist/main.cjs sits next to a copied
-  // db/migrations folder in the packaged app (Phase 8 packaging detail).
+  // Packaged layout: electron-builder ships electron/db/migrations as an
+  // extraResource at <resources>/migrations (see package.json "build").
   return app.isPackaged
     ? path.join(process.resourcesPath, 'migrations')
     : path.join(__dirname, '..', 'electron', 'db', 'migrations');
@@ -58,10 +57,6 @@ function createWindow(): void {
   }
   Menu.setApplicationMenu(null);
 }
-
-// Legacy channel kept so the PGlite-era renderer keeps working during the
-// phased migration (it asks where its data folder is).
-ipcMain.handle('distribpro:dataDir', () => dataDir());
 
 app.whenReady().then(async () => {
   await initDb();
