@@ -1,15 +1,32 @@
 import { PGlite } from '@electric-sql/pglite';
-import { OFFLINE_SCHEMA_SQL, OFFLINE_SEED_SQL } from './offlineSchema';
+import { OFFLINE_PATCH_SQL, OFFLINE_SCHEMA_SQL, OFFLINE_SEED_SQL } from './offlineSchema';
 
 // Local Postgres that stores its data in the user's app-data folder, so the
 // desktop app works with zero internet. Schemas, triggers and the seeded admin
 // user mirror the online Supabase project exactly.
-let db: PGlite | null = null;
+let dbPromise: Promise<PGlite> | null = null;
 
-export async function getDb(): Promise<PGlite> {
-  if (db) return db;
-  const dataDir = await resolveDataDir();
-  db = new PGlite(dataDir);
+// IndexedDB name for the local database. In the Electron app IndexedDB lives in
+// the app's own profile folder (%APPDATA%\\DistribPro), so data survives restarts.
+const DB_LOCATION = 'idb://distribpro-offline';
+
+export function getDb(): Promise<PGlite> {
+  // Cache the promise (not the instance) so concurrent first calls -- e.g. React
+  // StrictMode running effects twice -- share ONE database instead of opening two.
+  if (!dbPromise) {
+    dbPromise = openDb().catch((err) => {
+      dbPromise = null;
+      throw err;
+    });
+  }
+  return dbPromise;
+}
+
+async function openDb(): Promise<PGlite> {
+  // NOTE: a plain folder path would make PGlite use its Node filesystem
+  // backend, which cannot run inside the browser/renderer and crashed the app.
+  const db = new PGlite(DB_LOCATION);
+  await db.waitReady;
   await db.exec('CREATE TABLE IF NOT EXISTS _meta (key text PRIMARY KEY, value text)');
   const applied = await db.query<{ key: string }>("SELECT key FROM _meta WHERE key = 'schema_v1'");
   if (applied.rows.length === 0) {
@@ -17,19 +34,8 @@ export async function getDb(): Promise<PGlite> {
     await db.exec(OFFLINE_SEED_SQL);
     await db.exec("INSERT INTO _meta (key, value) VALUES ('schema_v1', now()::text) ON CONFLICT (key) DO NOTHING");
   }
+  await db.exec(OFFLINE_PATCH_SQL);
   return db;
-}
-
-async function resolveDataDir(): Promise<string> {
-  const electron = (window as unknown as { electronAPI?: { dataDir?: () => Promise<string> } }).electronAPI;
-  if (electron?.dataDir) {
-    try {
-      return await electron.dataDir();
-    } catch {
-      // fall through to IndexedDB
-    }
-  }
-  return 'idb://distribpro-offline';
 }
 
 export async function localQuery<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {

@@ -270,22 +270,29 @@ CREATE INDEX IF NOT EXISTS idx_salary_payments_employee ON salary_payments(emplo
 
 CREATE OR REPLACE FUNCTION adjust_stock_on_invoice_item() RETURNS trigger AS $$
 DECLARE
-  v_delta numeric;
+  v_sign numeric;
   v_doc_type text;
 BEGIN
+  -- Stock direction per document type: sale/purchase_return take stock out,
+  -- sales_return/purchase put stock back in. Other types: no effect.
   IF TG_TABLE_NAME = 'customer_invoice_items' THEN
-    IF TG_OP = 'DELETE' THEN v_delta := OLD.quantity; ELSE v_delta := NEW.quantity; END IF;
     SELECT invoice_type INTO v_doc_type FROM customer_invoices WHERE id = COALESCE(NEW.invoice_id, OLD.invoice_id);
-    IF v_doc_type = 'sale' THEN v_delta := -v_delta;
-    ELSIF v_doc_type <> 'sales_return' THEN RETURN NULL; END IF;
+    IF v_doc_type = 'sale' THEN v_sign := -1;
+    ELSIF v_doc_type = 'sales_return' THEN v_sign := 1;
+    ELSE RETURN NULL; END IF;
   ELSE
-    IF TG_OP = 'DELETE' THEN v_delta := OLD.quantity; ELSE v_delta := NEW.quantity; END IF;
     SELECT invoice_type INTO v_doc_type FROM supplier_invoices WHERE id = COALESCE(NEW.invoice_id, OLD.invoice_id);
-    IF v_doc_type = 'purchase_return' THEN v_delta := -v_delta;
-    ELSIF v_doc_type <> 'purchase' THEN RETURN NULL; END IF;
+    IF v_doc_type = 'purchase' THEN v_sign := 1;
+    ELSIF v_doc_type = 'purchase_return' THEN v_sign := -1;
+    ELSE RETURN NULL; END IF;
   END IF;
-  IF COALESCE(NEW.product_id, OLD.product_id) IS NULL THEN RETURN NULL; END IF;
-  UPDATE products SET stock_quantity = stock_quantity + v_delta WHERE id = COALESCE(NEW.product_id, OLD.product_id);
+  -- Undo the old line (DELETE / UPDATE), then apply the new line (INSERT / UPDATE).
+  IF TG_OP IN ('DELETE', 'UPDATE') AND OLD.product_id IS NOT NULL THEN
+    UPDATE products SET stock_quantity = stock_quantity - v_sign * OLD.quantity WHERE id = OLD.product_id;
+  END IF;
+  IF TG_OP IN ('INSERT', 'UPDATE') AND NEW.product_id IS NOT NULL THEN
+    UPDATE products SET stock_quantity = stock_quantity + v_sign * NEW.quantity WHERE id = NEW.product_id;
+  END IF;
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
@@ -328,4 +335,37 @@ INSERT INTO settings (
 INSERT INTO app_users (username, password_hash, salt)
 SELECT 'admin', '4ce1cbe16d4601c196baa607eabc8712674757873c0364bfbefbdc4cfc36e4b7', 'distribpro-default'
 WHERE NOT EXISTS (SELECT 1 FROM app_users);
+`;
+
+// Re-applied on every app start (idempotent) so fixes to trigger logic reach
+// databases that were created by an older version of the app.
+export const OFFLINE_PATCH_SQL = `
+CREATE OR REPLACE FUNCTION adjust_stock_on_invoice_item() RETURNS trigger AS $$
+DECLARE
+  v_sign numeric;
+  v_doc_type text;
+BEGIN
+  -- Stock direction per document type: sale/purchase_return take stock out,
+  -- sales_return/purchase put stock back in. Other types: no effect.
+  IF TG_TABLE_NAME = 'customer_invoice_items' THEN
+    SELECT invoice_type INTO v_doc_type FROM customer_invoices WHERE id = COALESCE(NEW.invoice_id, OLD.invoice_id);
+    IF v_doc_type = 'sale' THEN v_sign := -1;
+    ELSIF v_doc_type = 'sales_return' THEN v_sign := 1;
+    ELSE RETURN NULL; END IF;
+  ELSE
+    SELECT invoice_type INTO v_doc_type FROM supplier_invoices WHERE id = COALESCE(NEW.invoice_id, OLD.invoice_id);
+    IF v_doc_type = 'purchase' THEN v_sign := 1;
+    ELSIF v_doc_type = 'purchase_return' THEN v_sign := -1;
+    ELSE RETURN NULL; END IF;
+  END IF;
+  -- Undo the old line (DELETE / UPDATE), then apply the new line (INSERT / UPDATE).
+  IF TG_OP IN ('DELETE', 'UPDATE') AND OLD.product_id IS NOT NULL THEN
+    UPDATE products SET stock_quantity = stock_quantity - v_sign * OLD.quantity WHERE id = OLD.product_id;
+  END IF;
+  IF TG_OP IN ('INSERT', 'UPDATE') AND NEW.product_id IS NOT NULL THEN
+    UPDATE products SET stock_quantity = stock_quantity + v_sign * NEW.quantity WHERE id = NEW.product_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
 `;
