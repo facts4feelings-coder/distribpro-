@@ -17,16 +17,18 @@ if not exist node_modules (
     pause
     exit /b 1
   )
-  rem Electron aur esbuild ki binary files in ke apne install script se aati hain, wo alag se chala rahe hain:
   node node_modules\esbuild\install.js
+)
+rem Electron ki binary har dafa check hoti hai - pehli dafa download adhoora reh jaye to dobara try hota hai:
+if not exist node_modules\electron\path.txt (
   echo Electron download ho raha hai - thora waqt lagega...
   node node_modules\electron\install.js
-  if not exist node_modules\electron\path.txt (
-    echo Electron download NAHI ho saka - internet/GitHub se file nahi aayi.
-    echo Ye command khud chala kar error dekhen:  node node_modules\electron\install.js
-    pause
-    exit /b 1
-  )
+)
+if not exist node_modules\electron\path.txt (
+  echo Electron download NAHI ho saka - is liye build nahi ho sakta.
+  echo Khud ye command chala kar error dekhen:  node node_modules\electron\install.js
+  pause
+  exit /b 1
 )
 echo Tests chal rahe hain...
 call npm test
