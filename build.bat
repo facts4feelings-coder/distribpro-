@@ -43,11 +43,25 @@ if not exist "node_modules\.bin\vite.cmd" (
 
 REM ---- 3. Electron ka program (kabhi kabhi npm isay download nahi karta) ----
 if not exist "node_modules\electron\dist\electron.exe" (
-  echo  [*] Electron download ho raha hai...
+  echo  [*] Electron ki dependencies check ho rahi hain...
+  call npm install --no-audit --no-fund
+  if errorlevel 1 (
+    echo.
+    echo  [X] Dependencies install nahi huin. Upar wala error message bhej dein.
+    pause
+    exit /b 1
+  )
+  echo  [*] Electron install ho raha hai...
   call node node_modules\electron\install.js
+  if errorlevel 1 (
+    echo.
+    echo  [X] Electron install fail hua. Upar wala error message bhej dein.
+    pause
+    exit /b 1
+  )
   if not exist "node_modules\electron\dist\electron.exe" (
     echo.
-    echo  [X] Electron download nahi hua. Internet check karein aur dobara chalayen.
+    echo  [X] Electron ki file nahi mili. Upar wala output bhej dein.
     pause
     exit /b 1
   )

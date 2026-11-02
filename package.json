@@ -22,7 +22,6 @@
     "preelectron:build": "node scripts/prepare-icon.mjs",
     "prestart": "node scripts/prepare-icon.mjs"
   },
-  "dependencies": {},
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",
     "@eslint/js": "^9.9.1",
@@ -98,5 +97,8 @@
   },
   "description": "DistribPro - Distribution Management System (offline desktop app)",
   "author": "DistribPro",
-  "main": "electron/main.cjs"
+  "main": "electron/main.cjs",
+  "overrides": {
+    "yauzl": "^3.3.1"
+  }
 }
